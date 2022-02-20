@@ -1,0 +1,104 @@
+#!/usr/bin/env sh
+HELP() {
+echo "Usage : ./install-script action=[action] (var=val)"
+echo "Action:"
+echo "HELP                Print this message"
+echo "CHECK               Check for commands"
+echo "COMPILE             Compile source code"
+echo "INSTALL             Install package"
+echo "CLEAN               Clean current build"
+echo "If \$action is empty, it will run COMPILE by default"
+echo "Build variable:"
+echo "CC=<binary>         C compiler (default clang)"
+echo "CFLAGS=<flags>      C compiler flags"
+echo "PREFIX=<dir>        Install prefix (default /usr/local)"
+echo "DESTDIR=<dir>       Install directory (default /)"
+echo "SYSROOT=<dir>       Package root directory (default /)"
+echo "CONFDIR=<dir>       Package config directory (default \$SYSROOT/etc)"
+echo "You can create a .config file so that it will be used for compilation"
+exit
+}
+
+CHECK() {
+COMMAND="install sed rm echo tee \
+	find tar gzip mkdir cat \
+	diff ln readlink sh $CC"
+for x in "$COMMAND"; do
+	if ! command -v $x > /dev/null 2>&1; then
+		echo "$x is not found."
+	fi
+done
+
+}
+
+COMPILE() {
+cp -r src/hanh.c out/hanh.c 
+cp -r src/hanh.h out/hanh.h
+cp -r etc/hanh.conf out/hanh.conf 
+cp -r scripts/wrapper out/wrapper
+cp -r scripts/hanhbuild out/hanhbuild
+
+sed "s|sysroot|$SYSROOT|g" -i out/hanh.conf
+sed "s|CONFDIR|$CONFDIR|g" -i out/wrapper out/hanh.conf out/hanhbuild
+sed "s|prefix|$PREFIX|g" -i out/hanh.c out/hanh.conf
+eval $CC $CFLAGS -o out/hanh out/hanh.c
+}
+
+INSTALL() {
+install -dm755 $DESTDIR/$SYSROOT/$PREFIX/bin/
+install -dm755 $DESTDIR/$SYSROOT/$PREFIX/include/
+install -dm755 $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/doc
+install -dm755 $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/scripts
+install -dm755 $DESTDIR/$SYSROOT/var/lib/pachanh/system
+install -dm755 $DESTDIR/$SYSROOT/var/lib/pachanh/remote
+install -dm755 $DESTDIR/$CONFDIR/hanhmirror.d
+
+install -Dm755 out/hanh $DESTDIR/$SYSROOT/$PREFIX/bin/hanh 
+install -Dm755 out/wrapper $DESTDIR/$SYSROOT/$PREFIX/bin/pachanh 
+install -Dm755 out/hanhbuild $DESTDIR/$SYSROOT/$PREFIX/bin/hanhbuild
+
+install -Dm644 src/hanh.h $DESTDIR/$SYSROOT/$PREFIX/include/hanh.h
+
+for x in "check-deps.sh" "get-old.sh" "rm-old.sh" "check-conflict.sh" "mv-conf.sh"; do
+	install -Dm755 scripts/$x $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/scripts/$x
+done
+
+for x in "hanh" "hanhbuild" "doc-buildhanh"; do
+	install -Dm644 doc/$x $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/doc/$x
+done
+
+install -Dm644 out/hanh.conf $DESTDIR/$CONFDIR/hanh.conf
+}
+
+CLEAN() {
+rm -rf out
+mkdir out
+}
+
+eval "$*"
+
+if test -f config; then
+	. config
+fi
+
+if test -z "$CC"; then
+	CC=clang
+fi
+
+if test -z "$PREFIX"; then
+	PREFIX="/usr/local"
+fi
+
+if test -z "$SYSROOT"; then
+	SYSROOT="/"
+fi
+
+if test -z "$CONFDIR"; then
+	CONFDIR="$SYSROOT/etc"
+fi
+
+if test -z "$action"; then
+	action="COMPILE"
+fi
+
+$action || echo "Failed to run function $action" && exit 1

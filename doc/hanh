@@ -1,0 +1,21 @@
+hanh - Hanh Linux package manager
+Usage: hanh [Action] [Options]
+Action
+-s                        Sync database from remote 
+-i                        Install packages <file>
+-r                        Remove packages
+-f                        Search for installed packages
+-c                        Check if a package is available <pending>
+-S                        Build a snapshot <pending rewriting>
+Options 
+-h                        Print this message
+-v                        Print version
+-R <path>                 Change root directory
+-P <path>                 Change prefix
+-d <command>              Use another download command
+-m <path>                 Use specified mirror directory
+-t [info,filelist,header] Specify file(s) to search
+-D                        Disable dependencies check
+For any questions, please consider asking on GitHub: https://github.com/hanh-linux/pachanh
+
+Please do not use it raw, use the wrapper in shell file or specify the options.

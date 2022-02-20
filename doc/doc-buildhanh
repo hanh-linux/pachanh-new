@@ -1,0 +1,59 @@
+buildhanh - pachanh package build file
+
+The build file will have structure like this. 
+
+===============================================================
+> buildhanh
+===============================================================
+name=example
+ver=version
+desc="Example package description"
+home="https://www.example.org/"
+depends="depend1 depend2 depend3"
+mkdeps="depend4 depend5 depend6"
+sources="https://www.example.org/$name-$ver.tar.gz"
+contain="example-smaller"
+attach="file1 file2"
+config="path-to-config1 path-to-config2"
+files="$name-$ver.tar.gz $attatch"
+buildFlags=""
+
+unpack-pkg(){
+cd $workdir
+tar -xf $hanhdir/$name-$ver.tar.gz
+}
+
+compile-pkg(){
+cd $workdir/$name-$ver/
+# Package with GNU autotools: ./configure --prefix=/usr
+make
+}
+
+make-pkg(){
+cd $workdir/$name-$ver/
+make PREFIX="/usr" install
+install -Dm644 $workdir/file1 $pkgdir/usr/share/$name-$ver/file1
+}
+
+================================================================
+
+Explaining variables: 
+name              Package name
+ver               Package version
+desc              Package description
+home              Package homepage
+depends           Package runtime dependencies
+mkdeps            Package make dependencies
+sources           Remote source files
+attach            Fetch files attached with build file  
+files             Necessary files
+buildFlags        Available build flags
+config            Configuration files that will not be overwritten 
+hanhdir           Directory contains source files
+workdir           Directory to compile source code
+pkgdir            Directory to store compiled package
+
+Explaining functions: 
+unpack()          Preparing for the package build 
+compile()         Compiling the package
+mkpkg()           Creating the package archive
