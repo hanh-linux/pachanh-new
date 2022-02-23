@@ -220,7 +220,36 @@ if test -n "$repack"; then
 	tar -cJf "$hanhdir"/"$tarball" *	
 	echo "Package $tarball created."
 fi
-} 
+}
+
+ask() {
+cwd=$(pwd)
+read -r package
+pkg=$(echo $package | cut -d " " -f 1)
+for x in $*; do 
+	if test "$pkg" = "$x"; then
+		found=1
+		mkdir asked 
+		cd asked
+		fetch_pkg $pkg 
+		cd $pkg 
+		hanhbuild -b $misc || exit 1
+		mv *hanhpkg* $cwd 
+		cd $cwd
+	fi
+done
+
+if test -z $found; then 
+	echo "Package name $package not found! Re-enter again" 
+	ask $* 
+fi
+}
+
+ask_pkg() {
+echo "Available packages are: $*"
+echo "Please enter one below"
+ask $*
+}
 
 . CONFDIR/hanh.conf || die "Cannot get information from configuration file."
 
@@ -232,10 +261,10 @@ for arg in $*; do
 		-F) action=fetch_pkg;;
 		-g) action=gen_db;;
 		-gf) action=get_flag;;
-		-d) nodeps=1;;
-		-f) force=1;;
-		-c) clean=1;;
-		-bd) builddeps=1;;
+		-d) export nodeps=1;;
+		-f) export force=1;;
+		-c) export clean=1;;
+		-bd) export builddeps=1;;
 		-s=*) SYSROOT="$(echo $arg | cut -d "=" -f 2)";;
 		-bf=*) buildfile="$(echo $arg | cut -d "=" -f 2)";;
 		-t=*) Task="$(echo $arg | cut -d "=" -f 2 | sed 's/,/ /g')";;

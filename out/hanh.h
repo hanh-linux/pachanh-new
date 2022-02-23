@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 
-#define __PATHCHARS 2000
+#define __PATHCHARS 200000
 #define __HANHVER "2.0"
 
 void help() {
@@ -264,7 +264,7 @@ int SYNC(char a[], char b[], char c[]) {
 	/* a: Download command
 	 * b: Root directory
 	 * c: Mirror directory*/
-	char path[__PATHCHARS] = "", dbdir[__PATHCHARS]= "", dirc[100]="";
+	char path[__PATHCHARS] = "", dbdir[__PATHCHARS]= "", dirc[__PATHCHARS]="";
 	char *bufA = NULL, *bufB = NULL; 
 	int code = 0;
 	DIR *list;
@@ -536,4 +536,53 @@ void general_die() {
 	die("Feature is not ready to be used", 1);
 	}
 	
-	
+	int SNAPSHOT(char a[]) {
+		/*  a:  Root directory */
+		char pkgdir[__PATHCHARS]="", dirpkg[__PATHCHARS]= "", cwd[__PATHCHARS] = "";
+		snprintf(pkgdir, __PATHCHARS, "%s/var/lib/pachanh/system", a);
+		struct dirent *pDirent; 
+		char *token, *buf = NULL;
+		DIR *adir; 
+		
+		getcwd(cwd, __PATHCHARS);
+		
+		adir = opendir(pkgdir); 
+		while ((pDirent = readdir(adir)) != NULL) {
+			if (pDirent -> d_name[0] != '.') {
+				strcat(dirpkg, pDirent -> d_name); 
+				strcat(dirpkg, "\n");
+				}
+			}
+			token = strtok_r(dirpkg, "\n", &buf);
+			while (token != NULL) {
+				char builddir[__PATHCHARS] = "", builddirinside[__PATHCHARS]="", cmd[__PATHCHARS]="", fullpath[__PATHCHARS] = "";
+				int code = 0, found=0;
+				struct stat buffile; 
+				
+				snprintf(fullpath, __PATHCHARS, "%s/%s", pkgdir, token);
+				lstat(fullpath, &buffile); 
+				int link = S_ISLNK(buffile.st_mode); 
+				if (link == 0) {
+				snprintf(cmd, __PATHCHARS, "hanhbuild -F %s", token);
+				snprintf(builddir, __PATHCHARS, "%s/%s", cwd, token);
+				snprintf(builddirinside, __PATHCHARS, "%s/%s/%s", cwd, token, token);
+				code = system(cmd);
+				chdir(builddir); 
+				found=silent_check_path("buildhanh", 1, 0);
+				if (found != 0) {
+					chdir(builddirinside); 
+					code=check_path("Build file", "buildhanh", 1, 0);
+					check_code(code);
+					}
+				system("hanhbuild -b -bd");
+				chdir(cwd); 
+			}
+				token = strtok_r(NULL, "\n", &buf) ;
+				}
+				chdir(cwd);
+				mkdir("snapshot", 0755);
+				system("mv */*hanhpkg* snapshot");
+				system("mv */*/*hanhpkg* snapshot");
+				printf("Snapshot built, packages located at %s/snapshot", cwd);
+				return 0;
+					}
