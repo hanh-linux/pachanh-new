@@ -1,3 +1,0 @@
-source //etc/hanh.conf
-
-eval "$BIN" -R \"$SYSROOT\" -m \"$MIRRORDIR\" -d \"$DOWNLOADER\" "$@"
