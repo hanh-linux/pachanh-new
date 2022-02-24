@@ -19,60 +19,79 @@ echo "You can create a .config file so that it will be used for compilation"
 exit
 }
 
+msg() {
+if test "$verbose" != "no"; then
+	echo $*
+fi
+}
+
+run() {
+msg $* 
+$* 
+}
+
 CHECK() {
 COMMAND="install sed rm echo tee \
 	find tar gzip mkdir cat \
 	diff ln readlink sh $CC"
 for x in "$COMMAND"; do
 	if ! command -v $x > /dev/null 2>&1; then
+		msg "Check if $x is available"
 		echo "$x is not found."
 	fi
 done
 
 }
 
-COMPILE() {
-cp -r src/hanh.c out/hanh.c 
-cp -r src/hanh.h out/hanh.h
-cp -r etc/hanh.conf out/hanh.conf 
-cp -r scripts/wrapper out/wrapper
-cp -r scripts/hanhbuild out/hanhbuild
 
-sed "s|sysroot|$SYSROOT|g" -i out/hanh.conf
-sed "s|CONFDIR|$CONFDIR|g" -i out/wrapper out/hanh.conf out/hanhbuild
-sed "s|prefix|$PREFIX|g" -i out/hanh.c out/hanh.conf
-eval $CC $CFLAGS -o out/hanh out/hanh.c
+COMPILE() {
+run cp -r src/hanh.c out/hanh.c 
+run cp -r src/hanh.h out/hanh.h
+run cp -r etc/hanh.conf out/hanh.conf 
+run cp -r scripts/wrapper out/wrapper
+run cp -r scripts/hanhbuild out/hanhbuild
+
+run sed "s|sysroot|$SYSROOT|g" -i out/hanh.conf
+run sed "s|CONFDIR|$CONFDIR|g" -i out/wrapper out/hanh.conf out/hanhbuild
+run sed "s|prefix|$PREFIX|g" -i out/hanh.c out/hanh.conf
+run eval $CC $CFLAGS -o out/hanh out/hanh.c
 }
 
 INSTALL() {
-install -dm755 $DESTDIR/$SYSROOT/$PREFIX/bin/
-install -dm755 $DESTDIR/$SYSROOT/$PREFIX/include/
-install -dm755 $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/doc
-install -dm755 $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/scripts
-install -dm755 $DESTDIR/$SYSROOT/var/lib/pachanh/system
-install -dm755 $DESTDIR/$SYSROOT/var/lib/pachanh/remote
-install -dm755 $DESTDIR/$CONFDIR/hanhmirror.d
+run install -dm755 $DESTDIR/$SYSROOT/$PREFIX/bin/
+run install -dm755 $DESTDIR/$SYSROOT/$PREFIX/include/
+run install -dm755 $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/doc
+run install -dm755 $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/scripts
+run install -dm755 $DESTDIR/$SYSROOT/var/lib/pachanh/system
+run install -dm755 $DESTDIR/$SYSROOT/var/lib/pachanh/remote
+run install -dm755 $DESTDIR/$CONFDIR/hanhmirror.d
 
-install -Dm755 out/hanh $DESTDIR/$SYSROOT/$PREFIX/bin/hanh 
-install -Dm755 out/wrapper $DESTDIR/$SYSROOT/$PREFIX/bin/pachanh 
-install -Dm755 out/hanhbuild $DESTDIR/$SYSROOT/$PREFIX/bin/hanhbuild
+run install -Dm755 out/hanh $DESTDIR/$SYSROOT/$PREFIX/bin/hanh 
+run install -Dm755 out/wrapper $DESTDIR/$SYSROOT/$PREFIX/bin/pachanh 
+run install -Dm755 out/hanhbuild $DESTDIR/$SYSROOT/$PREFIX/bin/hanhbuild
 
-install -Dm644 src/hanh.h $DESTDIR/$SYSROOT/$PREFIX/include/hanh.h
+run install -Dm644 src/hanh.h $DESTDIR/$SYSROOT/$PREFIX/include/hanh.h
 
 for x in "check-deps.sh" "get-old.sh" "rm-old.sh" "check-conflict.sh" "mv-conf.sh"; do
-	install -Dm755 scripts/$x $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/scripts/$x
+	run install -Dm755 scripts/$x $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/scripts/$x
 done
 
 for x in "hanh" "hanhbuild" "doc-buildhanh"; do
-	install -Dm644 doc/$x $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/doc/$x
+	run install -Dm644 doc/$x $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/doc/$x
 done
 
-install -Dm644 out/hanh.conf $DESTDIR/$CONFDIR/hanh.conf
+run install -Dm644 out/hanh.conf $DESTDIR/$CONFDIR/hanh.conf
+}
+
+INSTALL_MIRROR() {
+for x in $(ls mirror/) ; do
+       run install -Dm755 mirror/$x $DESTDIR/$CONFDIR/hanhmirror.d/$x
+done       
 }
 
 CLEAN() {
-rm -rf out
-mkdir out
+run rm -rf out
+run mkdir out
 }
 
 eval "$*"

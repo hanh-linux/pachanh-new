@@ -165,7 +165,7 @@ if test -f "$hanhdir"/"$tarball"; then
 fi
 
 if test -n "$clean"; then
-	rm -rf "$pkgdir" "$workdir" "$hanhdir"/.buildinfo "$hanhdir"/"$tarball" "$hanhdir"/deps
+	rm -rf "$pkgdir" "$workdir" "$hanhdir"/.buildinfo "$hanhdir"/"$tarball" "$hanhdir"/deps "$hanhdir"/asked
 fi
 
 rm -rf "$pkgdir"
@@ -229,13 +229,20 @@ pkg=$(echo $package | cut -d " " -f 1)
 for x in $*; do 
 	if test "$pkg" = "$x"; then
 		found=1
-		mkdir asked 
+		mkdir -p asked 
 		cd asked
-		fetch_pkg $pkg 
-		cd $pkg 
-		hanhbuild -b $misc || exit 1
+		if test "$pkg" != "$name"; then 
+			fetch_pkg $pkg 
+			cd $pkg 
+			hanhbuild -b $misc || exit 1
+		else
+			echo "Building the package with the same name"
+			hanhbuild -bf=$hanhdir/buildhanh.$name -b $misc || exit 1
+		fi	
+
 		mv *hanhpkg* $cwd 
 		cd $cwd
+	
 	fi
 done
 
@@ -249,6 +256,12 @@ ask_pkg() {
 echo "Available packages are: $*"
 echo "Please enter one below"
 ask $*
+}
+
+define_ask() {
+ver=9999
+desc="Ask for $name providers"
+task="pkgask"
 }
 
 . CONFDIR/hanh.conf || die "Cannot get information from configuration file."
