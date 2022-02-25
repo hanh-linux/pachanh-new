@@ -221,7 +221,7 @@ for func in $task; do
 		eval "$func" || die "Failed to run function $func"
 	fi
 
-	if test "$task" = "mkpkg"; then
+	if test "$func" = "mkpkg"; then
 		repack=1;
 	fi
 done
