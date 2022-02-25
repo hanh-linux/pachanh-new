@@ -3,7 +3,6 @@ Next generation of Hanh Linux package manager.
 
 pachanh-new will be POSIX C and `sh` compatible.
 ### Installation
-> WARNING: The project is still testing. Try at your own risks
 #### Dependencies
 **Runtime binaries**
 - `sed`
@@ -12,7 +11,6 @@ pachanh-new will be POSIX C and `sh` compatible.
 - `tee`
 - `find`
 - `tar`
-- `gzip` (moving database archives to `xz`)
 - `xz`
 - `mkdir`
 - `cat`
@@ -22,12 +20,13 @@ pachanh-new will be POSIX C and `sh` compatible.
 - `sh` 
 - `mv`
 - `cp`
+- `type` (`posh` may not work properly, better disable build flavor)
 
 **Buildtime binaries**
 - `install`
 - A C compiler (`clang` is used by default)
 
-**Library**: Tested with `glibc` or `musl`.
+**Library**: Tested with `glibc` or `musl`, should work with any libc that provides POSIX C headers
 #### Compilation
 - Clone this repo and `cd` to it
 - Run `./install-script action=HELP` to get more infomation 
@@ -38,6 +37,7 @@ HELP                Print this message
 CHECK               Check for commands
 COMPILE             Compile source code
 INSTALL             Install package
+INSTALL_MIRROR      Install available repo mirrors (hanh-linux/hanh-packages)
 CLEAN               Clean current build
 If $action is empty, it will run COMPILE by default
 Build variable:

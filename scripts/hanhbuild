@@ -165,7 +165,7 @@ if test -f "$hanhdir"/"$tarball"; then
 fi
 
 if test -n "$clean"; then
-	rm -rf "$pkgdir" "$workdir" "$hanhdir"/.buildinfo "$hanhdir"/"$tarball" "$hanhdir"/deps "$hanhdir"/asked
+	rm -rf "$pkgdir" "$workdir" "$hanhdir"/.buildinfo "$hanhdir"/"$tarball" "$hanhdir"/deps
 fi
 
 rm -rf "$pkgdir"
@@ -194,10 +194,34 @@ done
 
 check_files $files 
 
-for x in $task; do 
-	echo "Running function $x..."
-	eval "$x" || die "Failed to run function $x"
-	if test "$x" = "mkpkg"; then
+for func in $task; do 
+	unset run_compile
+	echo "Running function $func..."
+	if test "$func" = "compile"; then
+		run_compile=1
+		if test -n "$flavor"; then
+			for flv in $flavor; do 
+				if test -n "$(type compile_$flv | grep function)"; then
+					echo "Using flavor $flv to build."
+					use_flavor=1
+					eval compile_$flv || die "Failed to run function compile_$flv"
+					break
+				fi
+			done
+			if test -z $use_flavor; then 
+				echo "No specfied build flavor found! Using compile by default..."
+				eval compile || die "Failed to run function compile"
+			fi
+		else
+			eval compile || die "Failed to run function compile"
+		fi
+	fi
+
+	if test -z $run_compile; then 
+		eval "$func" || die "Failed to run function $func"
+	fi
+
+	if test "$task" = "mkpkg"; then
 		repack=1;
 	fi
 done
@@ -220,49 +244,7 @@ if test -n "$repack"; then
 	tar -cJf "$hanhdir"/"$tarball" *	
 	echo "Package $tarball created."
 fi
-}
-
-ask() {
-cwd=$(pwd)
-read -r package
-pkg=$(echo $package | cut -d " " -f 1)
-for x in $*; do 
-	if test "$pkg" = "$x"; then
-		found=1
-		mkdir -p asked 
-		cd asked
-		if test "$pkg" != "$name"; then 
-			fetch_pkg $pkg 
-			cd $pkg 
-			hanhbuild -b $misc || exit 1
-		else
-			echo "Building the package with the same name"
-			hanhbuild -bf=$hanhdir/buildhanh.$name -b $misc || exit 1
-		fi	
-
-		mv *hanhpkg* $cwd 
-		cd $cwd
-	
-	fi
-done
-
-if test -z $found; then 
-	echo "Package name $package not found! Re-enter again" 
-	ask $* 
-fi
-}
-
-ask_pkg() {
-echo "Available packages are: $*"
-echo "Please enter one below"
-ask $*
-}
-
-define_ask() {
-ver=9999
-desc="Ask for $name providers"
-task="pkgask"
-}
+} 
 
 . CONFDIR/hanh.conf || die "Cannot get information from configuration file."
 
@@ -274,10 +256,10 @@ for arg in $*; do
 		-F) action=fetch_pkg;;
 		-g) action=gen_db;;
 		-gf) action=get_flag;;
-		-d) export nodeps=1;;
-		-f) export force=1;;
-		-c) export clean=1;;
-		-bd) export builddeps=1;;
+		-d) nodeps=1;;
+		-f) force=1;;
+		-c) clean=1;;
+		-bd) builddeps=1;;
 		-s=*) SYSROOT="$(echo $arg | cut -d "=" -f 2)";;
 		-bf=*) buildfile="$(echo $arg | cut -d "=" -f 2)";;
 		-t=*) Task="$(echo $arg | cut -d "=" -f 2 | sed 's/,/ /g')";;
