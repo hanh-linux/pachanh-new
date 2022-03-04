@@ -111,6 +111,7 @@ if test -z "$buildfile"; then
 	buildfile="$(pwd)/buildhanh"
 fi
 . "$buildfile" || die "Cannot get build information from $buildfile"
+echo "Build flavor are: $buildFlavor"
 echo "Build flags are: $buildFlags"
 }
 
