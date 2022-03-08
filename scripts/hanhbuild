@@ -149,6 +149,48 @@ echo "config=\"$config\"" >> "$HEADER"
 echo "pkg_infodir=\"var/lib/pachanh/system/$name\"" >> "$HEADER"
 }
 
+ask() {
+cwd=$(pwd)
+read -r package
+pkg=$(echo $package | cut -d " " -f 1)
+for x in $*; do
+	if test "$pkg" = "$x"; then
+		found=1
+		mkdir -p asked
+		cd asked
+		if test "$pkg" != "$name"; then
+			fetch_pkg $pkg
+			cd $pkg
+			hanhbuild -b $misc || exit 1
+		else
+			echo "Building the package with the same name"
+			hanhbuild -bf=$hanhdir/buildhanh.$name -b $misc || exit 1
+		fi
+
+		mv *hanhpkg* $cwd
+		cd $cwd
+
+	fi
+done
+
+if test -z $found; then
+	echo "Package name $package not found! Re-enter again"
+	ask $*
+fi
+}
+
+ask_pkg() {
+echo "Available packages are: $*"
+echo "Please enter one below"
+ask $*
+}
+
+define_ask() {
+ver=9999
+desc="Ask for $name providers"
+task="pkgask"
+}
+
 build() {
 export $USE_FLAGS
 . "$buildfile" || die "Cannot get information from $buildfile"
