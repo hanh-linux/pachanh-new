@@ -127,7 +127,8 @@ int main(int argc, char **argv)
 		break;
 		
 		case 4:
-		general_die();
+		exitcode=SNAPSHOT(ROOT);
+		check_code(exitcode);
 		break;
 		
 		case 5:
