@@ -6,6 +6,7 @@ Action:
 -g                           Generate database file
 -F                           Fetch package(s) build file(s)
 -b                           Build packages
+-gf                          Get packages build flags and flavors
 Options:
 -s=<path>                    Root directory <overwrite $SYSROOT>
 -bf=<path>                   Build file

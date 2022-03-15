@@ -78,7 +78,7 @@ for x in "check-deps.sh" "get-old.sh" "rm-old.sh" "check-conflict.sh" "mv-conf.s
 	run install -Dm755 scripts/$x $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/scripts/$x
 done
 
-for x in "hanh" "hanhbuild" "doc-buildhanh"; do
+for x in "hanh" "hanhbuild" "doc-buildhanh" "update_pkg"; do
 	run install -Dm644 doc/$x $DESTDIR/$SYSROOT/$PREFIX/share/pachanh/doc/$x
 done
 

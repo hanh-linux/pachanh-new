@@ -1,0 +1,6 @@
+update_pkginfo - Update remote and local packages information
+Usage: update_pkginfo [action]
+Action: 
+-update-bad         Update bad list packages
+-v                  Print version
+-h                  Print help message
