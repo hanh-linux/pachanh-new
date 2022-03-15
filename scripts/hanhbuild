@@ -1,5 +1,7 @@
 #!/bin/sh
 version=2.0
+remote=/var/lib/pachanh/remote
+system=/var/lib/pachanh/system
 
 print_help() {
 echo "hanhbuild - Hanh Linux packages builder"
@@ -68,7 +70,7 @@ done
 check_deps() {
 if test -n "$*"; then
 	for dep in $*; do
-		if ! test -d $SYSROOT/var/lib/pachanh/system/$dep; then
+		if ! test -d $SYSROOT/$system/$dep; then
 			if test -z "$builddeps"; then
 				die "Dependency $dep not found"
 			else
@@ -84,6 +86,21 @@ if test -n "$*"; then
 fi
 }
 
+check_bad() {
+if test -n "$TYPE"; then
+	for T in $TYPE; do
+		if test -f $SYSROOT/$remote/packages.$T; then
+			for pkg in $* $name; do 
+				BAD="$(cat $SYSROOT/$remote/packages.$T | grep $pkg)"
+				if test -n "$BAD"; then
+					echo "Warning: Using $pkg listed as $T package"
+				fi
+			done
+		fi
+	done
+fi
+}
+
 check_files() {
 for x in $*; do
 	if ! test -f "$hanhdir"/"$x"; then 
@@ -93,7 +110,7 @@ done
 }
 
 check_contain() {
-cd $pkgdir/var/lib/pachanh/system
+cd $pkgdir/$system
 for x in $*; do
 	ln -sf "$name" "$x" 
 done
@@ -199,6 +216,8 @@ if test -n "$Task"; then
 	task="$Task"
 fi
 
+cd $hanhdir
+
 tarball="$name"-"$ver".hanhpkg.tar.xz
 
 if test -f "$hanhdir"/"$tarball"; then 
@@ -213,7 +232,6 @@ fi
 
 rm -rf "$pkgdir"
 mkdir -p "$pkgdir" "$workdir"
-echo $hanhdir
 
 if test -f "$hanhdir"/.buildinfo; then 	
 	. "$hanhdir"/.buildinfo || die "Failed to run .buildinfo"
@@ -223,11 +241,12 @@ if test -z "$task"; then
 	task="unpack compile mkpkg" 
 fi
 
+echo "Checking for bad packages..."
+check_bad $depends $mkdeps
 if test -z "$nodeps"; then	
 	echo "Checking deps..."
 	mkdir -p $hanhdir/deps
-	check_deps $depends
-	check_deps $mkdeps
+	check_deps $depends $mkdeps
 fi
 
 echo "Fetching sources..."

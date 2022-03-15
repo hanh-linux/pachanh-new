@@ -50,9 +50,10 @@ run cp -r src/hanh.h out/hanh.h
 run cp -r etc/hanh.conf out/hanh.conf 
 run cp -r scripts/wrapper out/wrapper
 run cp -r scripts/hanhbuild out/hanhbuild
+run cp -r scripts/update_pkg out/update_pkg
 
 run sed "s|sysroot|$SYSROOT|g" -i out/hanh.conf
-run sed "s|CONFDIR|$CONFDIR|g" -i out/wrapper out/hanh.conf out/hanhbuild
+run sed "s|CONFDIR|$CONFDIR|g" -i out/wrapper out/hanh.conf out/hanhbuild out/update_pkg
 run sed "s|prefix|$PREFIX|g" -i out/hanh.c out/hanh.conf
 run eval $CC $CFLAGS -o out/hanh out/hanh.c
 }
@@ -69,6 +70,7 @@ run install -dm755 $DESTDIR/$CONFDIR/hanhmirror.d
 run install -Dm755 out/hanh $DESTDIR/$SYSROOT/$PREFIX/bin/hanh 
 run install -Dm755 out/wrapper $DESTDIR/$SYSROOT/$PREFIX/bin/pachanh 
 run install -Dm755 out/hanhbuild $DESTDIR/$SYSROOT/$PREFIX/bin/hanhbuild
+run install -Dm755 out/update_pkg $DESTDIR/$SYSROOT/$PREFIX/bin/update_pkg
 
 run install -Dm644 src/hanh.h $DESTDIR/$SYSROOT/$PREFIX/include/hanh.h
 
