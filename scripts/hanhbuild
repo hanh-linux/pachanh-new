@@ -209,7 +209,7 @@ task="pkgask"
 }
 
 build() {
-export $USE_FLAGS
+test -n "$USE_FLAGS" && export $USE_FLAGS
 . "$buildfile" || die "Cannot get information from $buildfile"
 
 if test -n "$Task"; then
