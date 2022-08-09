@@ -108,10 +108,6 @@ int updatePkglist(const char *root, const char *pkg) {
 	fclose(orderfile); 
 }
 
-int nftwfunc(const char *filename, const struct stat *fileBuf, int type, struct FTW *ftwb) {
-	return 0; 
-}
-
 int clearTmp(const char *tmpdir) {
 	char cleanCmd[__CMD] = ""; 
 	snprintf(cleanCmd, __CMD, "rm -rf %s", tmpdir);

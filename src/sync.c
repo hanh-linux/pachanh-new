@@ -36,7 +36,7 @@ int SYNC(char repositories[], const char *root, const char *mirror, const char *
 			char database[__PATH] = ""; 
 			char repoUpdate[__PATH] = ""; 
 
-			snprintf(fetchdb, __PATH, "%s %s/%s.database", fetchCmd, mir, repo);
+			snprintf(fetchdb, __CMD, "%s %s/%s.database", fetchCmd, mir, repo);
 			snprintf(database, __PATH, "%s/%s.database", remotePath, repo);
 			snprintf(repoUpdate, __PATH, "%s/%s.sh", remotePath, repo); 
 
