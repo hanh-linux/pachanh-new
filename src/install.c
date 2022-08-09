@@ -27,7 +27,9 @@ int updateDepends(const char *root, const char *pkgname, char depends[]) {
 	char *dep = strtok_r(depends, " ", &depBuf);
 	int code = 0; 
 	while (dep != NULL) {
-		char sedcmd[__CMD]= ""; 
+		char presed[__CMD]= "";
+		char sedcmd[__CMD]= "";
+		snprintf(presed, __CMD, "sed -i \'s/%s //g\' %s/var/lib/pachanh/system/%s/info", pkgname, root, dep);
 		snprintf(sedcmd, __CMD, "sed -i \'s/dependants=\"/dependants=\"%s /g\' %s/var/lib/pachanh/system/%s/info", pkgname, root, dep);
 		code=system(sedcmd); 
 		if (code != 0) {
@@ -159,8 +161,8 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		char *pkg_infodir = NULL                 ;
 		
 		snprintf(header , __PATH, "%s/pre-install"                        , tmp           );
-		snprintf(tarHead, __ARG , "%s pre-install"                        , pkg         );
-		snprintf(hook   , __ARG , "%s hook"                               , pkg         );
+		snprintf(tarHead, __ARG , "%s pre-install"                        , pkg           );
+		snprintf(hook   , __ARG , "%s hook"                               , pkg           );
 		snprintf(prehook, __PATH, "%s/hook pre_install"                   , tmp           );
 		snprintf(afthook, __PATH, "%s/hook post_install"                  , tmp           ); 
 		
@@ -213,7 +215,7 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		checkCode(code);	
 
 		printf("Finishing %s\n", name);
-		if (nodepends == 0 && installCode != 0) { 
+		if (nodepends == 0) { 
 			if (verbose != 0) debug("Updating dependencies information"); 
 			code = updateDepends(root, name, depends);
 			checkCode(code);
