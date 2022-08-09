@@ -31,7 +31,8 @@ int updateDepends(const char *root, const char *pkgname, char depends[]) {
 		char sedcmd[__CMD]= "";
 		snprintf(presed, __CMD, "sed -i \'s/%s //g\' %s/var/lib/pachanh/system/%s/info", pkgname, root, dep);
 		snprintf(sedcmd, __CMD, "sed -i \'s/dependants=\"/dependants=\"%s /g\' %s/var/lib/pachanh/system/%s/info", pkgname, root, dep);
-		code=system(sedcmd); 
+		code = system(presed);
+		code = system(sedcmd); 
 		if (code != 0) {
 			err("Failed to update dependencies information");
 		}
