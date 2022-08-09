@@ -1,0 +1,61 @@
+#include "hanh.h"
+
+int SYNC(char repositories[], const char *root, const char *mirror, const char *fetchCmd, const int verbose) {
+	char cwd[__PATH] = "";
+	char remotePath[__PATH] = ""; 
+	char *rBuf = NULL; 
+	char *repo = strtok_r(repositories, " ", &rBuf); 
+	int code  = 0;
+
+	getcwd(cwd, __PATH); 
+	snprintf(remotePath, __PATH, "%s/var/lib/pachanh/remote", root);
+	chdir(remotePath);
+	printf("Cleaning old database...\n");
+	code = system("rm -rf *");
+	checkCode(code);
+
+	while (repo != NULL) {
+		char repoPath[__PATH] = "";
+		snprintf(repoPath, __PATH, "%s/%s", mirror, repo);
+		code = checkPath(repoPath, repo); 
+		checkCode(code); 
+
+		FILE *repoFile = fopen(repoPath, "r");
+		fseek(repoFile, 0, SEEK_END);
+		int size = ftell(repoFile); 
+		fseek(repoFile, 0, SEEK_SET);
+		char repoCon[size]; 
+		fread(repoCon, size, 1, repoFile);
+		repoCon[size] = 0;
+
+		char *mirBuf = NULL;
+		char *mir = strtok_r(repoCon, "\n", &mirBuf); 
+		printf("Fetching %s.database\n", repo);
+		while (mir != NULL) {
+			char fetchdb[__CMD] = ""; 
+			char database[__PATH] = ""; 
+			char repoUpdate[__PATH] = ""; 
+
+			snprintf(fetchdb, __PATH, "%s %s/%s.database", fetchCmd, mir, repo);
+			snprintf(database, __PATH, "%s/%s.database", remotePath, repo);
+			snprintf(repoUpdate, __PATH, "%s/%s.sh", remotePath, repo); 
+
+			code = system(fetchdb); 
+			if (code == 0) {
+				if (verbose != 0) debug("Unpacking repo database");
+				mkdir(repo, 0755);
+				code = untar(repo, database); 
+				checkCode(code); 
+				if((checkPath(repoUpdate, "silent")) == 0) {
+					if (verbose != 0) debug("Triggering update script");
+					code = system(repoUpdate); 
+					checkCode(code);
+				}
+				break;
+			}
+			mir = strtok_r(NULL, "\n", &mirBuf);
+		}
+		repo = strtok_r(NULL, " ", &rBuf);
+	}	
+	return code; 
+}

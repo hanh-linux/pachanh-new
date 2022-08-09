@@ -9,12 +9,12 @@ echo "Usage: hanhbuild [Action] [Options]"
 echo "Action:"
 echo "-h                           Print this message"
 echo "-v                           Print version"
-echo "-g                           Generate database file"
+echo "-g                           Create database archive of all packages in current directory"
 echo "-F                           Fetch package(s) build file(s)"
 echo "-b                           Build packages"
 echo "-gf                          See all available flags from a build file"
 echo "Options:"
-echo "-s=<path>                    Root directory <overwrite \$SYSROOT>"
+echo "-R=<path>                    Root directory <overwrite \$SYSROOT>"
 echo "-bf=<path>                   Build file"
 echo "Options <for build action only>:"
 echo "-d                           Do not check dependencies"
@@ -22,7 +22,12 @@ echo "-c                           Clean build"
 echo "-f                           Force"
 echo "-bd                          Build dependencies"
 echo "-t=[unpack,compile,mkpkg]    Build tasks"
-echo "For any questions, please consider asking on GitHub: https://github.com/hanh-linux/pachanh"
+echo "-i                           Install packages after build (skip compile if package found)"
+echo "-s                           Compare system package version"
+echo "-I                           Ignore error (if package not found)"
+echo "Options <for database only>:"
+echo "-r=<name>                    Repository name"
+echo "-H=<path>                    Hook script"
 exit 0
 }
 err() {
@@ -35,67 +40,68 @@ exit 1
 }
 
 fetch() {
-eval "$DOWNLOADER $*"
+eval "$downloader $*" || die "Failed to fetch source"
 }
 
 fetch_pkg() {
 cwd=$(pwd)
 if test -z "$repo"; then
-	repo="$(ls $MIRRORDIR)"
+	die "Empty repo"
 fi
 
 for x in $*; do
+	unset fetched found
 	for y in $repo; do
-		for z in $(cat "$MIRRORDIR/$y"); do
-			fetch $z/$x/buildhanh
-			if test -f buildhanh; then 
-				mkdir -p "$x"
-				mv buildhanh "$x"/buildhanh
-				cd "$x"
-				. "$(pwd)/buildhanh"
-				for t in $attach; do 
-					fetch $z/$x/$t
-				done
-				cd $cwd
-				break 
-			fi
-		done
-		if test -f "$x"/buildhanh; then
-			break
+		if test -d $sysroot/$remote/$y/$x; then
+			found=1
+			for z in $(cat "$mirror/$y"); do
+					fetch $z/$x/buildhanh
+					if test -f "$(pwd)/buildhanh"; then
+						fetched=1 
+						. "$(pwd)/buildhanh"
+						for t in $attach; do 
+							fetch $z/$x/$t
+						done
+						cd $cwd
+						break
+					fi	
+			done
 		fi
 	done
+	if test -z $found; then 
+		if test -z "$ignore"; then 
+			die "Cannot find specified package ($x)"
+		fi
+	fi
 done
+}
+
+compare_sysver() {
+unset same initver version
+if test -d $sysroot/$system/$name/info; then
+	initver=$(cat $sysroot/$system/$name/info | grep version)
+	version=$(echo $initver | cut -d "=" -f 2)
+
+	if test "$ver" == "$version"; then 
+		same=y
+	fi
+fi
 }
 
 check_deps() {
 if test -n "$*"; then
 	for dep in $*; do
-		if ! test -d $SYSROOT/$system/$dep; then
+		if ! test -d $sysroot/$system/$dep; then
 			if test -z "$builddeps"; then
 				die "Dependency $dep not found"
 			else
 				cd "$hanhdir"/deps
-				hanhbuild -F "$dep"
+				hanhbuild -F "$dep" || die 
 				cd "$dep"
-				hanhbuild -b -bd
-				pachanh -i $dep*.hanhpkg.tar.xz
+				hanhbuild -b -bd || die "Failed to build dependencies"
+				hanh -i $dep*.hanhpkg.tar.xz || die "Failed to install dependencies"
 				cd "$hanhdir"
 			fi
-		fi
-	done
-fi
-}
-
-check_bad() {
-if test -n "$TYPE"; then
-	for T in $TYPE; do
-		if test -f $SYSROOT/$remote/packages.$T; then
-			for pkg in $* $name; do 
-				BAD="$(cat $SYSROOT/$remote/packages.$T | grep $pkg)"
-				if test -n "$BAD"; then
-					echo "Warning: Using $pkg listed as $T package"
-				fi
-			done
 		fi
 	done
 fi
@@ -138,15 +144,40 @@ echo "$name-$ver" > data
 echo "$desc" >> data
 }
 
+gen_archive() {
+cwd=$(pwd)
+test -z $dbrepo && die "Empty database repository name"
+if test "$dbrepo" != "$(basename $dbrepo)"; then 
+	echo "WARNING: database archive will be placed in $cwd/$(basename $dbrepo).database"
+	dbrepo=$(basename $dbrepo) 
+fi 
+
+rm -rf $dbrepo && mkdir $dbrepo
+for pkgdir in $(ls); do  
+	if test "$pkgdir" != "$dbrepo"; then  
+		mkdir $cwd/$dbrepo/$pkgdir 
+		cd $cwd/$pkgdir 
+		buildfile=$cwd/$pkgdir/buildhanh gen_db
+		mv data $cwd/$dbrepo/$pkgdir/ 
+		cd ..
+	fi
+done
+
+cd $dbrepo 
+cp -r $hook .
+tar -cJf $cwd/$dbrepo.database *
+}
+
 gen_info() {
 info="${1}"
-echo "Name: $name" >> "$info"
-echo "Version: $ver" >> "$info"
-echo "Description: $desc" >> "$info"
-echo "Depends: $depends" >> "$info"
-echo "Contain: $contain" >> "$info" 
-echo "Homepage: $home" >> "$info"
-echo "License: $license" >> "$info"
+echo "name=\"$name\"" >> "$info"
+echo "version=\"$ver\"" >> "$info"
+echo "desc=\"$desc\"" >> "$info"
+echo "home=\"$home\"" >> "$info"
+echo "license=\"$license\"" >> $info
+echo "depends=\"$depends\"" >> "$info"
+echo "contain=\"$contain\"" >> "$info"
+echo "dependants=\"\"" >> "$info"
 }
 
 gen_filelist() {
@@ -220,10 +251,26 @@ cd $hanhdir
 
 tarball="$name"-"$ver".hanhpkg.tar.xz
 
+if test -n "$syscompare"; then 
+	compare_sysver $name 
+	if test -n "$same"; then 
+		echo "$name is up-to-date."
+		exit 
+	fi
+fi
+
 if test -f "$hanhdir"/"$tarball"; then 
 	if test -z "$force"; then 
-		die "Package built"
+		# This won't be listed as error 
+		echo "WARNING: Package built."
+	else 
+		unset install
 	fi
+
+	if test -n "$install"; then
+		hanh -i "$hanhdir"/"$tarball"
+	fi
+	exit 0
 fi
 
 if test -n "$clean"; then
@@ -241,17 +288,15 @@ if test -z "$task"; then
 	task="unpack compile mkpkg" 
 fi
 
-echo "Checking for bad packages..."
-check_bad $depends $mkdeps
 if test -z "$nodeps"; then	
 	echo "Checking deps..."
 	mkdir -p $hanhdir/deps
-	check_deps $depends $mkdeps
+	check_deps $depends $mkdeps  
 fi
 
 echo "Fetching sources..."
 for url in $sources; do
-	fetch $url
+	fetch $url || die "Failed to fetch sources"
 done
 
 check_files $files 
@@ -266,6 +311,7 @@ for func in $task; do
 				if test -n "$(type compile_$flv | grep function)"; then
 					echo "Using flavor $flv to build."
 					use_flavor=1
+					echo "used=$flv" >> $hanhdir/.buildinfo
 					eval compile_$flv || die "Failed to run function compile_$flv"
 					break
 				fi
@@ -299,8 +345,11 @@ if test -n "$repack"; then
 	touch "$infodir"/filelist
 	gen_info "$infodir"/info
 	gen_header "$pkgdir"/pre-install
-	gen_header "$infodir"/header
 	gen_filelist "$infodir"/filelist
+	if test -f "$hanhdir"/"hook"; then 
+		install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/hook
+		install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/"$system"/hook
+	fi
 	
 	cd "$pkgdir"
 	tar -cJf "$hanhdir"/"$tarball" *	
@@ -308,24 +357,28 @@ if test -n "$repack"; then
 fi
 } 
 
-. CONFDIR/hanh.conf || die "Cannot get information from configuration file."
+. CONFDIR/hanhbuild.conf || die "Cannot get information from configuration file."
 
 for arg in $*; do
 	case $arg in 
 		-h) print_help;;
 		-v) echo "$version";exit;;
-		-b) action=build;;
-		-F) action=fetch_pkg;;
-		-g) action=gen_db;;
-		-gf) action=get_flag;;
-		-d) nodeps=1;;
-		-f) force=1;;
-		-c) clean=1;;
-		-bd) builddeps=1;;
-		-s=*) SYSROOT="$(echo $arg | cut -d "=" -f 2)";;
+		-d) export nodeps=1;;
+		-f) export force=1;;
+		-c) export clean=1;;
+		-i) export install=1;;
+		-s) export syscompare=1;;
+		-bd) export builddeps=1;;
+		-R=*) sysroot="$(echo $arg | cut -d "=" -f 2)";;
 		-bf=*) buildfile="$(echo $arg | cut -d "=" -f 2)";;
 		-t=*) Task="$(echo $arg | cut -d "=" -f 2 | sed 's/,/ /g')";;
 		-fl=*) flag="$(echo $arg | cut -d "=" -f 2)";;
+		-r=*) export dbrepo="$(echo $arg | cut -d "=" -f 2)";;
+		-H=*) export hook="$(echo $arg | cut -d "=" -f 2)";;
+		-b) action=build;;
+		-F) action=fetch_pkg;;
+		-g) action=gen_archive;;
+		-gf) action=get_flag;;
 		*) misc="$misc $arg";;
 	esac
 done

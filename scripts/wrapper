@@ -1,3 +1,0 @@
-. CONFDIR/hanh.conf
-
-eval "$BIN" -R \"$SYSROOT\" -m \"$MIRRORDIR\" -d \"$DOWNLOADER\" "$@"

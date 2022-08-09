@@ -4,29 +4,40 @@ int main(int argc, char **argv)
 {	
 	/*Actions: 
 	 * -i 		install 			= 1
-	 * -r 		remove 		= 2
-	 * -s 		sync 				= 3 
-	 * -S 		Snapshot 	= 4  
-	 * -f 		find				=	5
-	 * -c		check			= 6
+	 * -r 		remove 				= 2
+	 * -q 		query 				= 3 
+	 * -s		sync	 			= 4  
+	 * -f		find				= 5
+	 * -S		snapshot			= 6
 	 * Multiple actions will result in an override*/
+	
 	int action 	= 0;
 	int nodeps	= 0; // enable checking dependencies by default
-	
+	int exitcode	= 0;
+	int opt            ;
+
 	// General variables will be used from command-line 
-	char packages[__PATHCHARS]		=	"";
-	char ROOT[__PATHCHARS]			=	"";
-	char download[__PATHCHARS] 	=	"";
-	char mirror[__PATHCHARS]			=	"";
-	char type[__PATHCHARS]				=	"";
-	char PREFIX[__PATHCHARS]			=	"prefix";
-		
-	// Misc
-	int exitcode	=	0;
-	int opt;
+	char packages[__ARG]       = ""  ;
+	char type[__ARG]           = ""  ;
+	static char *sysroot       = NULL;
+	static char *download      = NULL;
+	static char *mirror        = NULL;
+	static char *repo          = NULL; 
+	static long int verbose    = 0   ;
+	
+	cfg_opt_t options[] = {
+	CFG_SIMPLE_STR("sysroot", &sysroot), 
+	CFG_SIMPLE_STR("download", &download),
+	CFG_SIMPLE_STR("mirror", &mirror), 
+	CFG_SIMPLE_STR("repo", &repo),
+	CFG_SIMPLE_INT("verbose", &verbose),
+	CFG_END()
+	};
+	cfg_t *cfg = cfg_init(options, 0); 
+	cfg_parse(cfg, "CONFDIR/hanh.conf");
 	
 	/* Working with command-line argument. Here we use POSIX getopt() function. */
-	while ((opt = getopt(argc, argv, "irsSfchvR:d:m:t:DP:")) != -1){
+	while ((opt = getopt(argc, argv, "irqsfShvR:d:m:t:D")) != -1){
 		switch (opt) {
 			
 			case 'h': 
@@ -34,7 +45,7 @@ int main(int argc, char **argv)
 			break;
 			
 			case 'v':
-			printver();
+			printf("%s\n", __VER); 
 			break;
 			
 			case 'i':
@@ -45,11 +56,11 @@ int main(int argc, char **argv)
 			action=2;
 			break;
 		
-			case 's': 
+			case 'q': 
 			action=3;
 			break;
 			
-			case 'S':
+			case 's':
 			action=4;
 			break;
 			
@@ -57,7 +68,7 @@ int main(int argc, char **argv)
 			action=5;
 			break;
 			
-			case 'c': 
+			case 'S': 
 			action=6;
 			break;
 			
@@ -66,7 +77,7 @@ int main(int argc, char **argv)
 			break;
 						
 			case 'R': 
-			strcpy(ROOT, optarg);
+			strcpy(sysroot, optarg);
 			break;
 			
 			case 'd': 
@@ -81,10 +92,6 @@ int main(int argc, char **argv)
 			strcpy(type, optarg);
 			break;
 			
-			case 'P':
-			strcpy(PREFIX, optarg);
-			break; 
-			
 			case '?':
 			printf("Please use \"hanh -h\" for more information\n");
 			return 1;
@@ -97,50 +104,61 @@ int main(int argc, char **argv)
 		strcat(packages, " ");
 		}
 		
+		
+	if (verbose != 0) {
+		printf("[DEBUG] Variables: \n");
+		printf("sysroot: %s\n", sysroot); 
+		printf("download: %s\n", download); 
+		printf("mirror: %s\n", mirror); 
+		printf("repo: %s\n", repo);
+		printf("verbose: %ld\n", verbose);
+		printf("\n"); 
+	}	
+		
 	/*Check for command line error*/	
-	exitcode= check_empty(download, "Download command");
-	check_code(exitcode);
-	exitcode=check_path("Root", ROOT, 1, 1);
-	check_code(exitcode);
-	exitcode=check_path("Mirror directory", mirror, 1, 1);
-	check_code(exitcode);
-	
+	exitcode = checkEmpty(download, "Download command");
+	checkCode(exitcode);
+	exitcode = checkPath(sysroot, "Root");
+	checkCode(exitcode);
+	exitcode = checkPath(mirror, "Mirror directory");
+	checkCode(exitcode); 
 	switch(action) {
 		
 		case 0: 
-		die("No action is specified! Please specify one", 1);
+		err("No action is specified! Please specify one");
+		exitcode = 1;
 		break;
-		
+	
 		case 1:
-		exitcode = INSTALL(packages, ROOT, PREFIX, nodeps);
-		check_code(exitcode);
+		exitcode = INSTALL(packages, sysroot, nodeps, verbose);
+		checkCode(exitcode);
 		break;
+
 		
 		case 2: 
-		exitcode = REMOVE(packages, ROOT);
-		check_code(exitcode);
+		exitcode = REMOVE(packages, sysroot, "package", verbose, 1);
+		checkCode(exitcode);
 		break;
 		
 		case 3:
-		exitcode=SYNC(download, ROOT, mirror);
-		check_code(exitcode);
+		exitcode = QUERY(packages, sysroot, type); 
+		checkCode(exitcode);
 		break;
-		
+
 		case 4:
-		exitcode=SNAPSHOT(ROOT);
-		check_code(exitcode);
+		exitcode = SYNC(repo, sysroot, mirror, download, verbose);
+		checkCode(exitcode);
 		break;
-		
+	
 		case 5:
-		exitcode = FIND(packages, ROOT, type);
-		check_code(exitcode); 
+		FIND(packages, sysroot, repo); 
 		break;
-		
+
 		case 6:
-		exitcode = CHECK(packages, ROOT, mirror);
-		check_code(exitcode);	
+		exitcode = SNAPSHOT(sysroot);
+		checkCode(exitcode);	
 		break;
-		
 		}		
+	return exitcode; 
 }
 
