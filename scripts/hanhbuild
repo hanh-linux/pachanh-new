@@ -263,14 +263,15 @@ if test -f "$hanhdir"/"$tarball"; then
 	if test -z "$force"; then 
 		# This won't be listed as error 
 		echo "WARNING: Package built."
+		test -z $install && exit 0
 	else 
 		unset install
 	fi
 
 	if test -n "$install"; then
 		hanh -i "$hanhdir"/"$tarball"
+		exit 0
 	fi
-	exit 0
 fi
 
 if test -n "$clean"; then

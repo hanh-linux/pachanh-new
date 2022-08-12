@@ -10,9 +10,8 @@ echo "CLEAN               Clean current build"
 echo "INSTALL_MIRROR      Install available mirrors"
 echo "If \$action is empty, it will run COMPILE by default"
 echo "Build variables:"
-echo "CC=<binary>         C compiler (default clang)"
-echo "LD=<binary>         Linker (default ld.lld)"
-echo "CFLAGS=<flags>      C compiler flags"
+echo "CC=<binary>         C compiler (default clang, need a linker)"
+echo "CFLAGS=<flags>      C compiler flags (-fuse-ld=<linker> to change linker)"
 echo "PREFIX=<dir>        Install prefix (default /usr/local)"
 echo "DESTDIR=<dir>       Install directory (default /)"
 echo "SYSROOT=<dir>       Package root directory (default /)"
@@ -38,7 +37,7 @@ $*
 CHECK() {
 COMMAND="install sed rm echo tee \
 	find tar gzip mkdir cat \
-	diff ln readlink sh $CC $LD"
+	diff ln readlink sh $CC"
 for x in "$COMMAND"; do
 	if ! command -v $x > /dev/null 2>&1; then
 		msg "Check if $x is available"
@@ -57,7 +56,7 @@ run sed "s|SYSROOT|$SYSROOT|g" -i out/hanh.conf out/hanhbuild.conf
 run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c
 run sed "s|prefix|$PREFIX|g" -i out/hanh.c
 cd out/
-CC=$CC LD=$LD CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" ./build 
+CC=$CC CFLAGS="$CFLAGS" ./build 
 cd ../ 
 }
 
@@ -98,10 +97,6 @@ fi
 
 if test -z "$CC"; then
 	CC=clang
-fi
-
-if test -z "$LD"; then
-	LD="ld.lld"
 fi
 
 if test -z "$PREFIX"; then
