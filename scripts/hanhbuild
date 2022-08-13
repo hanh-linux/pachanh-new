@@ -355,6 +355,9 @@ if test -n "$repack"; then
 	cd "$pkgdir"
 	tar -cJf "$hanhdir"/"$tarball" *	
 	echo "Package $tarball created."
+	if test -n $install; then 
+		hanh -i $hanhdir/$name-$ver.hanhpkg.tar.xz 
+	fi
 fi
 } 
 
