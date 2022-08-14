@@ -240,7 +240,7 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		if (verbose != 0) debug("Cleaning up");
 		code = remove(rhead); 
 		checkCode(code);
-		// code = clearTmp(tmp); 
+		code = clearTmp(tmp); 
 		checkCode(code);
 		if (installCode != 0) {
 			if(verbose != 0) debug("New package installed! Updating package list");
