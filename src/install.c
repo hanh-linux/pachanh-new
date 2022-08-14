@@ -146,6 +146,7 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 	while(pkg != NULL) {
 		char tmpdir[20]      = "/tmp/tmp.XXXXXX" ; 
 		char *tmp            = mkdtemp(tmpdir)   ;
+		char rhead[__PATH]   = ""                ;
 		char header[__PATH]  = ""                ;
 		char tarHead[__ARG]  = ""                ; 
 		char hook[__ARG]     = ""                ;
@@ -162,6 +163,7 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		char *pkg_infodir = NULL                 ;
 		
 		snprintf(header , __PATH, "%s/pre-install"                        , tmp           );
+		snprintf(rhead  , __PATH, "%s/pre-install"                        , root          ); 
 		snprintf(tarHead, __ARG , "%s pre-install"                        , pkg           );
 		snprintf(hook   , __ARG , "%s hook"                               , pkg           );
 		snprintf(prehook, __PATH, "%s/hook pre_install"                   , tmp           );
@@ -233,6 +235,8 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 			removeOld(root, tmp);
 		}
 		if (verbose != 0) debug("Cleaning up");
+		code = remove(rhead); 
+		checkCode(code);
 		code = clearTmp(tmp); 
 		checkCode(code);
 		if (installCode != 0) {
