@@ -13,7 +13,8 @@ int getDiff(const char *root, const char *tmp, const char *pkg, const char *pkgi
 	snprintf(new, __PATH, "%s/%s/", tmp, pkginfodir);
 	int code = untar(tmp, infodir); 
 	if (code == 0) {
-		snprintf(cmd, __CMD, "diff \"%s\" \"%s\" | grep \"<\" | cut -d \"<\" -f 2 > %s/oldfiles", old, new, tmp);
+		// Get rid of whitespace 
+		snprintf(cmd, __CMD, "(diff \"%s\" \"%s\" | grep \"<\" | cut -d \"<\" -f 2 | sed 's/ //g') > %s/oldfiles", old, new, tmp);
 		code = system(cmd);
 		if (code != 0) err("Failed to filter old files"); 
 	} else {
@@ -118,7 +119,9 @@ void removeOld(const char *root, const char *tmp) {
 	snprintf(filelistpath, __PATH, "%s/oldfiles", tmp);
 
 	FILE *filelist = fopen(filelistpath, "r");
+	fseek(filelist, 0, SEEK_END);
 	int size = ftell(filelist); 
+	fseek(filelist, 0, SEEK_SET); 
 	char filec[size];
 	fread(filec, size, 1, filelist);
 	filec[size] = 0; 
@@ -128,7 +131,7 @@ void removeOld(const char *root, const char *tmp) {
 	while (file != NULL) {
 		char fullpath[__PATH]	= ""; 
 		int code = 0;
-		snprintf(fullpath, __PATH, "%s/%s", root, file); 
+		snprintf(fullpath, __PATH, "%s/%s", root, file);
 		code = remove(fullpath); 
 		if (code != 0) printf("WARNING: failed to remove %s\n", fullpath); 
 	
@@ -237,7 +240,7 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		if (verbose != 0) debug("Cleaning up");
 		code = remove(rhead); 
 		checkCode(code);
-		code = clearTmp(tmp); 
+		// code = clearTmp(tmp); 
 		checkCode(code);
 		if (installCode != 0) {
 			if(verbose != 0) debug("New package installed! Updating package list");
