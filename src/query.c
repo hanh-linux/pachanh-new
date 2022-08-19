@@ -1,7 +1,7 @@
 #include "hanh.h"
 
 int QUERY(char packages[], const char *root, const char *filetype) {
-	if (package[0] = '\0') {
+	if (packages[0] == '\0') {
 		char pkgorderpath[__PATH] = ""; 
 		snprintf(pkgorderpath, __PATH, "%s/var/lib/pachanh/system/pkgorder", root);
 		FILE *pkgorder = fopen(pkgorderpath, "r"); 
