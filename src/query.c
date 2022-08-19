@@ -1,6 +1,20 @@
 #include "hanh.h"
 
 int QUERY(char packages[], const char *root, const char *filetype) {
+	if (package[0] = '\0') {
+		char pkgorderpath[__PATH] = ""; 
+		snprintf(pkgorderpath, __PATH, "%s/var/lib/pachanh/system/pkgorder", root);
+		FILE *pkgorder = fopen(pkgorderpath, "r"); 
+		fseek(pkgorder, 0, SEEK_END); 
+		int size = ftell(pkgorder);
+		fseek(pkgorder, 0, SEEK_SET); 
+		char pkgorderCon[size];
+		fread(pkgorderCon, size, 1, pkgorder); 
+		pkgorderCon[size] = 0;
+		printf("%s\n", pkgorderCon); 
+		fclose(pkgorder); 
+		return 0; 
+	}
 	char *pkgBuf = NULL; 
 	char *pkg  = strtok_r(packages, " ", &pkgBuf);
 	int code = 0;

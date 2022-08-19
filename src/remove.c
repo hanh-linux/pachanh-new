@@ -14,6 +14,8 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 		char flpath[__PATH]   = "";
 		char sedOrder[__CMD]  = "";
 		char link[__PATH]     = "";
+		char pkgpath[__PATH]  = "";
+
 		char tmpdir[__PATH]   = "/tmp/tmp.XXXXXX"; 
 		char *tmp             = mkdtemp(tmpdir)  ;	
 		
@@ -55,6 +57,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			snprintf(sedOrder, __CMD , "sed -i \'s/%s;//g\' %s/var/lib/pachanh/system/pkgorder && sed -i \'/^$/d\' %s/var/lib/pachanh/system/pkgorder", name, root, root);
 			snprintf(movehook, __CMD , "cp -r %s/var/lib/pachanh/system/%s/hook %s/", root, name, tmp); 
 			snprintf(flpath  , __PATH, "%s/var/lib/pachanh/system/%s/filelist", root, name);
+			snprintf(pkgpath , __PATH, "%s/var/lib/pachanh/system/%s", root, name);
 
 			FILE *filelist = fopen(flpath, "r");
 			fseek(filelist, 0, SEEK_END);
@@ -114,6 +117,8 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 
 				con = strtok_r(NULL, " ", &conBuf);	
 			}
+			code = rmdir(pkgpath); 
+			checkCode(code); 
 
 			if (hookcode == 0) {
 				if (verbose != 0) debug("Running post hook");
