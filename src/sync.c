@@ -35,10 +35,12 @@ int SYNC(char repositories[], const char *root, const char *mirror, const char *
 			char fetchdb[__CMD] = ""; 
 			char database[__PATH] = ""; 
 			char repoUpdate[__PATH] = ""; 
+			char triggerCmd[__CMD]  = ""; 
 
 			snprintf(fetchdb, __CMD, "%s %s/%s.database", fetchCmd, mir, repo);
 			snprintf(database, __PATH, "%s/%s.database", remotePath, repo);
-			snprintf(repoUpdate, __PATH, "%s/%s.sh", remotePath, repo); 
+			snprintf(repoUpdate, __PATH, "%s/%s/%s.sh", remotePath, repo, repo); 
+			snprintf(triggerCmd, __CMD, "sh %s", repoUpdate);
 
 			code = system(fetchdb); 
 			if (code == 0) {
@@ -48,7 +50,7 @@ int SYNC(char repositories[], const char *root, const char *mirror, const char *
 				checkCode(code); 
 				if((checkPath(repoUpdate, "silent")) == 0) {
 					if (verbose != 0) debug("Triggering update script");
-					code = system(repoUpdate); 
+					code = system(triggerCmd); 
 					checkCode(code);
 				}
 				break;

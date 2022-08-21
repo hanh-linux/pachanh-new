@@ -164,7 +164,7 @@ for pkgdir in $(ls); do
 done
 
 cd $dbrepo 
-cp -r $hook .
+install -Dm755 $hook .
 tar -cJf $cwd/$dbrepo.database *
 }
 
