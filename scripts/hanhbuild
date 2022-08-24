@@ -347,7 +347,7 @@ if test -n "$repack"; then
 	gen_info "$infodir"/info
 	gen_header "$pkgdir"/pre-install
 	gen_filelist "$infodir"/filelist
-	if test -f "$hanhdir"/"hook"; then 
+	if test -f "$hanhdir"/"$hook"; then 
 		install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/hook
 		install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/"$infodir"/hook
 	fi
