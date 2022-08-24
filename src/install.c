@@ -30,6 +30,7 @@ int updateDepends(const char *root, const char *pkgname, char depends[]) {
 	while (dep != NULL) {
 		char presed[__CMD]= "";
 		char sedcmd[__CMD]= "";
+		// Remove existing package in dependants string for further package installation 
 		snprintf(presed, __CMD, "sed -i \'s/%s //g\' %s/var/lib/pachanh/system/%s/info", pkgname, root, dep);
 		snprintf(sedcmd, __CMD, "sed -i \'s/dependants=\"/dependants=\"%s /g\' %s/var/lib/pachanh/system/%s/info", pkgname, root, dep);
 		code = system(presed);
@@ -114,6 +115,7 @@ void checkConfig(const char *root, char config[]) {
 	} 
 } 
 
+// TODO: Remove all old version folders
 void removeOld(const char *root, const char *tmp) {
 	char filelistpath[__PATH] = ""; 
 	snprintf(filelistpath, __PATH, "%s/oldfiles", tmp);
@@ -153,9 +155,12 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		char header[__PATH]  = ""                ;
 		char tarHead[__ARG]  = ""                ; 
 		char hook[__ARG]     = ""                ;
-		char prehook[__PATH] = ""                ;
-		char afthook[__PATH] = ""                ;
-		
+
+		char preinstall[__PATH] = ""             ;
+		char aftinstall[__PATH] = ""             ;
+		char preupgrade[__PATH] = ""             ;
+		char aftupgrade[__PATH] = ""             ;
+
 		// Parse config for name, depends, contain (package provide part), config (to backup), pkg_infordir 
 		char *name        = NULL                 ;
 		char *version     = NULL                 ;
@@ -169,8 +174,12 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		snprintf(rhead  , __PATH, "%s/pre-install"                        , root          ); 
 		snprintf(tarHead, __ARG , "%s pre-install"                        , pkg           );
 		snprintf(hook   , __ARG , "%s hook"                               , pkg           );
-		snprintf(prehook, __PATH, "%s/hook pre_install"                   , tmp           );
-		snprintf(afthook, __PATH, "%s/hook post_install"                  , tmp           ); 
+		
+		// should we use 'source'? 	
+		snprintf(preinstall, __PATH, "%s/hook pre_install"      , tmp );
+		snprintf(aftinstall, __PATH, "%s/hook post_install"     , tmp ); 
+		snprintf(preupgrade, __PATH, "%s/hook pre_upgrade"      , tmp ); 
+		snprintf(aftupgrade, __PATH, "%s/hook post_upgrade"     , tmp ); 
 		
 		printf("Unpacking %s\n", pkg); 
 		if (verbose != 0) printf("[DEBUG] Unpacking header\n");
@@ -211,9 +220,16 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 			checkCode(code);
 		}
 		if (hookcode == 0) {
-			if (verbose != 0) debug("Triggering pre-install hook"); 	
-			code = system(prehook); 
-			checkCode(code);
+			if (installCode != 0) {
+				if (verbose != 0) debug("Triggering pre-install hook"); 	
+				code = system(preinstall); 
+				checkCode(code);
+			}
+			else {
+				if (verbose != 0) debug("Triggering pre-upgrade hook");
+				code = system(preupgrade);
+				checkCode(code);
+			}
 		}
 
 		printf("Installing %s\n", name);
@@ -229,14 +245,21 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		if (verbose != 0) debug("Working with config");
 		checkConfig(root, config);
 		if (hookcode == 0) {
-			if (verbose != 0) debug("Triggering after install hook");
-			code = system(afthook);
-			checkCode(code); 
+			if (installCode == 0) {
+				if (verbose != 0) debug("Triggering post install hook");
+				code = system(aftinstall);
+				checkCode(code); 
+			}
+			else {
+				if (verbose != 0) debug("Triggering post upgrade hook");
+				code = system(aftupgrade); 
+				checkCode(code);
+			}
 		}
 		if (installCode == 0) {
 			if (verbose != 0) debug("Removing old files");
 			removeOld(root, tmp);
-		}
+		} 
 		if (verbose != 0) debug("Cleaning up");
 		code = remove(rhead); 
 		checkCode(code);

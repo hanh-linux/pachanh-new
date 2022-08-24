@@ -17,7 +17,7 @@ void FIND(char packages[], const char *root, char repositories[]) {
 				char dataCon[size]; 
 				dataCon[size] = 0; 
 				fread(dataCon, size, 1, data); 
-				printf("Repository: %s\n%s\n", repo, dataCon);
+				printf("%s/%s\n", repo, dataCon);
 				fclose(data);
 			}
 		repo = strtok_r(NULL, " ", &repoBuf);

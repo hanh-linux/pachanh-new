@@ -1,6 +1,9 @@
 #include "hanh.h"
 
-// Would implement removing dependencies later, dependants first
+// TODO: Remove all files in package
+// TODO: Support removing dependencies
+
+// Users have to manually delete package(s) old configuration file(s)
 int REMOVE(char packages[], const char *root, const char *mode, const long int verbose, const int exitFail) {
 	char *buf = NULL; 
 	char *pkg = strtok_r(packages, " ", &buf); 
@@ -72,7 +75,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 
 			hookcode = system(movehook);
 			if (hookcode == 0) {
-				if (verbose != 0) debug("Running pre-hook");
+				if (verbose != 0) debug("Running pre-remove hook");
 				code = system(prehook); 
 				checkCode(code); 
 			}
@@ -92,6 +95,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 				} 
 				else {
 					rmCode = remove(fullfilepath);
+					// should we treat this as error? 
 					if (rmCode != 0) printf("WARNING: failed to remove %s\n", fullfilepath); 
 				}
 
@@ -102,6 +106,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			char *dirBuf = NULL; 
 			char *dir    = strtok_r(dirinpkg, "\n", & dirBuf); 
 			while (dir != NULL) {
+				// should we treat this as error? 
 				rmdir(dir);	
 				dir = strtok_r(NULL, "\n", &dirBuf); 
 			}
@@ -121,7 +126,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			checkCode(code); 
 
 			if (hookcode == 0) {
-				if (verbose != 0) debug("Running post hook");
+				if (verbose != 0) debug("Running post-remove hook");
 				code = system(posthook); 
 				checkCode(code);
 			}
