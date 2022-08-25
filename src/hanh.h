@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <confuse.h>
+#include <errno.h>
 
 #define __PREFIX "prefix"
 #define __PATH 2048

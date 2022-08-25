@@ -123,11 +123,9 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 				checkCode(code); 
 
 				con = strtok_r(NULL, " ", &conBuf);	
-			}
-			code = remove(hookpath);
-			checkCode(code);
-			code = rmdir(pkgpath); 
-			checkCode(code); 
+			} 
+			cfg_free(cfg);
+			fclose(filelist); 
 
 			if (hookcode == 0) {
 				if (verbose != 0) debug("Running post-remove hook");
@@ -141,7 +139,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 				char *dep    = strtok_r(depends, " ", &depBuf);
 				while (dep != NULL) {
 					char sedDep[__CMD]   = "";
-					snprintf(sedDep, __CMD, "sed -i \'s/%s //g\' %s/var/lib/pachanh/system/%s/info", name, root, dep);
+					snprintf(sedDep, __CMD, "sed -i 's/%s //g' %s/var/lib/pachanh/system/%s/info", name, root, dep);
 					code = system(sedDep); 
 					if (code != 0) printf("Warning: failed to update %s", dep);
 					code = 0; 
@@ -151,10 +149,21 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			} 
 			code = system(sedOrder);
 			checkCode(code);
+
+			if (verbose != 0) debug("Cleaning package data directory");
+			if (hookcode == 0) {
+				code = remove(hookpath);
+				checkCode(code);
+			}
+			
+			if ((checkDir(pkgpath, "silent")) == 0) {
+				code = remove(pkgpath); 
+				checkCode(code);
+			}
+
 			if (verbose != 0) debug("Cleaning up");
 			code = clearTmp(tmp); 
 			checkCode(code);
-			fclose(filelist); 
 		}
 		else {
 			if (exitFail != 0) {
