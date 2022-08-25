@@ -349,7 +349,7 @@ if test -n "$repack"; then
 	gen_filelist "$infodir"/filelist
 	if test -f "$hanhdir"/"$hook"; then 
 		install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/hook
-		install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/"$infodir"/hook
+		install -Dm755 "$hanhdir"/"$hook" "$infodir"/hook
 	fi
 	
 	cd "$pkgdir"
