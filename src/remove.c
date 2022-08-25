@@ -18,6 +18,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 		char sedOrder[__CMD]  = "";
 		char link[__PATH]     = "";
 		char pkgpath[__PATH]  = "";
+		char hookpath[__PATH] = "";
 
 		char tmpdir[__PATH]   = "/tmp/tmp.XXXXXX"; 
 		char *tmp             = mkdtemp(tmpdir)  ;	
@@ -46,7 +47,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 
 		snprintf(prehook , __CMD , "%s/hook pre_remove", tmp); 
 		snprintf(posthook, __CMD , "%s/hook post_remove", tmp);
-		snprintf(info    , __PATH, "%s/var/lib/pachanh/system/%s/info", root, pkg); 
+		snprintf(info    , __PATH, "%s/var/lib/pachanh/system/%s/info", root, pkg);
 		
 		if (verbose != 0) debug("Checking if package is installed");
 		int code     = checkInstalled(root, pkg); 
@@ -57,8 +58,9 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			if ((strcmp(pkg, name)) != 0) { printf("%s contains %s, removing %s\n", pkg, name, name); }
 			printf("Removing %s\n", name);
 			
-			snprintf(sedOrder, __CMD , "sed -i \'s/%s;//g\' %s/var/lib/pachanh/system/pkgorder && sed -i \'/^$/d\' %s/var/lib/pachanh/system/pkgorder", name, root, root);
-			snprintf(movehook, __CMD , "cp -r %s/var/lib/pachanh/system/%s/hook %s/", root, name, tmp); 
+			snprintf(sedOrder, __CMD , "sed -i 's/%s;//g' %s/var/lib/pachanh/system/pkgorder && sed -i '/^$/d' %s/var/lib/pachanh/system/pkgorder", name, root, root);
+			snprintf(movehook, __CMD , "cp -r %s/var/lib/pachanh/system/%s/hook %s/", root, name, tmp);
+			snprintf(hookpath, __PATH, "%s/var/lib/pachanh/system/%s/hook", root, name); 
 			snprintf(flpath  , __PATH, "%s/var/lib/pachanh/system/%s/filelist", root, name);
 			snprintf(pkgpath , __PATH, "%s/var/lib/pachanh/system/%s", root, name);
 
@@ -122,6 +124,8 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 
 				con = strtok_r(NULL, " ", &conBuf);	
 			}
+			code = remove(hookpath);
+			checkCode(code);
 			code = rmdir(pkgpath); 
 			checkCode(code); 
 
@@ -132,7 +136,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			}
 
 			if (verbose != 0) debug("Updating package information");
-			if ((strcmp(mode, "packages")) == 0) {
+			if ((strcmp(mode, "package")) == 0) {
 				char *depBuf = NULL; 
 				char *dep    = strtok_r(depends, " ", &depBuf);
 				while (dep != NULL) {

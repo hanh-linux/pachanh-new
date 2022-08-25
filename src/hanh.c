@@ -136,7 +136,7 @@ int main(int argc, char **argv)
 
 		
 		case 2: 
-		exitcode = REMOVE(packages, sysroot, "packages", verbose, 1);
+		exitcode = REMOVE(packages, sysroot, "package", verbose, 1);
 		checkCode(exitcode);
 		break;
 		
