@@ -164,7 +164,7 @@ for pkgdir in $(ls); do
 done
 
 cd $dbrepo 
-install -Dm755 $hook .
+install -Dm755 $repohook .
 tar -cJf $cwd/$dbrepo.database *
 }
 
@@ -378,7 +378,7 @@ for arg in $*; do
 		-t=*) Task="$(echo $arg | cut -d "=" -f 2 | sed 's/,/ /g')";;
 		-fl=*) flag="$(echo $arg | cut -d "=" -f 2)";;
 		-r=*) export dbrepo="$(echo $arg | cut -d "=" -f 2)";;
-		-H=*) export hook="$(echo $arg | cut -d "=" -f 2)";;
+		-H=*) export repohook="$(echo $arg | cut -d "=" -f 2)";;
 		-b) action=build;;
 		-F) action=fetch_pkg;;
 		-g) action=gen_archive;;
