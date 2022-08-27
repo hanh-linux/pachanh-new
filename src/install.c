@@ -104,12 +104,16 @@ void checkConfig(const char *root, char config[]) {
 	char *cfgfile = strtok_r(config, " ", &confBuf);
 	int code = 0;
 	while (cfgfile != NULL) {
+		char configFullPath[__PATH] = "";
+		snprintf(configFullPath, __PATH, "%s/%s", root, cfgfile);
+		if ((checkPath(configFullPath, "silent")) != 0) {
 		// rename() will fail to execute if package file is installed in a 
 		// separate partition, better use system `mv`
 		char mvcmd[__CMD] = ""; 
 		snprintf(mvcmd, __CMD, "mv %s/%s.newfile %s/%s", root, cfgfile, root, cfgfile);
 		code = system(mvcmd);
 		if (code != 0) printf("WARNING: failed to move %s\n", cfgfile);	
+		}
 
 		cfgfile = strtok_r(NULL, " ", &confBuf);
 	} 
