@@ -14,7 +14,7 @@ echo "-F                           Fetch package(s) build file(s)"
 echo "-b                           Build packages"
 echo "-gf                          See all available flags from a build file"
 echo "Options:"
-echo "-R=<path>                    Root directory <overwrite \$SYSROOT>"
+echo "-R=<path>                    Root directory <overwrite \$sysroot>"
 echo "-bf=<path>                   Build file"
 echo "Options <for build action only>:"
 echo "-d                           Do not check dependencies"
@@ -78,9 +78,10 @@ done
 
 compare_sysver() {
 unset same initver version
-if test -d $sysroot/$system/$name/info; then
+echo $sysroot/$system/$name/info
+if test -f $sysroot/$system/$name/info; then
 	initver=$(cat $sysroot/$system/$name/info | grep version)
-	version=$(echo $initver | cut -d "=" -f 2)
+	version=$(echo $initver | cut -d "=" -f 2 | sed 's/"//g')	
 
 	if test "$ver" == "$version"; then 
 		same=y
