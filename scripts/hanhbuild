@@ -265,6 +265,7 @@ if test -f "$hanhdir"/"$tarball"; then
 		echo "WARNING: Package built."
 		test -z $install && exit 0
 	else 
+		install_later=$install
 		unset install
 	fi
 
@@ -355,10 +356,12 @@ if test -n "$repack"; then
 	cd "$pkgdir"
 	tar -cJf "$hanhdir"/"$tarball" *	
 	echo "Package $tarball created."
+	install_later=$install
 	if test -n "$install"; then 
 		hanh -i $hanhdir/$name-$ver.hanhpkg.tar.xz 
 	fi
 fi
+unset install_later install
 } 
 
 . CONFDIR/hanhbuild.conf || die "Cannot get information from configuration file."
