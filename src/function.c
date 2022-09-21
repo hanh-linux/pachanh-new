@@ -1,4 +1,6 @@
 #include "hanh.h"
+#include <errno.h>
+#include <dirent.h>
 
 void err(const char *msg) {
 	printf("ERROR: %s\n", msg); 
@@ -42,14 +44,24 @@ int checkPath(const char *obj, const char *msg) {
 	return code; 
 	}
 
+// We don't believe in returned value of stat function
+// Using opendir() to do it (<dirent.h> is not available on Windows)
 int checkDir(const char *obj, const char *msg) {
-	struct stat *buf = malloc(sizeof(struct stat));
-	stat(obj, buf); 
-	int code = S_ISDIR(buf->st_mode);
-	if (code == 1) { code = 0; } else { code = 1; }
-	if (code != 0) {
-		if ((strcmp(msg, "silent")) != 0) printf("ERROR: %s not found or not directory\n", msg); 
+	DIR *dir = opendir(obj);
+	int code = 0; 
+	if (dir) {
+		code = 0; 	
 	}
+	else if (ENOENT == errno) {
+		if ((strcmp(msg, "silent")) != 0) {
+			printf("%s not found\n", msg);
+		}
+		code = 1;
+	}
+	else {
+		printf("Failed to open %s: %s", obj, strerror(errno));
+		exit(errno);
+	} 
 	return code; 
 }
 
