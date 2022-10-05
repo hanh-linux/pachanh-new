@@ -29,7 +29,7 @@ echo "-I                           Ignore error (if package not found)"
 echo "Options <for database only>:"
 echo "-r=<name>                    Repository name"
 echo "-H=<path>                    Hook script"
-echo "(*): Please use ';' instead of ' ' for variable value"
+echo "(*): Please use ':' instead of ' ' for separating variable value"
 exit 0
 }
 err() {
@@ -245,13 +245,11 @@ task="pkgask"
 append_compileflags() {
 touch $hanhdir/.temp-buildhanh || die Failed to create temporary file
 for cfl in $*; do
-	unset flag_name flag_val
 	cfl=${cfl#-a}
-	flag_name="$(echo $cfl | cut -d '=' -f 1)"
-	flag_val="$(echo $cfl | cut -d '=' -f 2 | sed 's/;/ /g')"
-	echo $flag_name=\"\$$flag_name $flag_val\" >> $hanhdir/.temp-buildhanh
+	flag_var="$(echo $cfl | cut -d '=' -f 1)"
+	flag_val="$(echo $cfl | cut -d '=' -f 2 | sed 's/:/ /')"
+	echo $flag_var=\"\$$flag_var $flag_val\" >> $hanhdir/.temp-buildhanh
 done
-echo "###### BUILD SCRIPT ######" >> $hanhdir/.temp-buildhanh
 cat "$hanhdir/buildhanh" >> $hanhdir/.temp-buildhanh
 mv $hanhdir/.temp-buildhanh $hanhdir/buildhanh
 }
