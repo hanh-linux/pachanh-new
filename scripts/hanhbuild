@@ -16,6 +16,7 @@ echo "-gf                          See all available flags from a build file"
 echo "Options:"
 echo "-R=<path>                    Root directory <overwrite \$sysroot>"
 echo "-bf=<path>                   Build file"
+echo "-a<var>=<val>                Append needed variable to build file (*)" 
 echo "Options <for build action only>:"
 echo "-d                           Do not check dependencies"
 echo "-c                           Clean build"
@@ -28,6 +29,7 @@ echo "-I                           Ignore error (if package not found)"
 echo "Options <for database only>:"
 echo "-r=<name>                    Repository name"
 echo "-H=<path>                    Hook script"
+echo "(*): Please use ';' instead of ' ' for variable value"
 exit 0
 }
 err() {
@@ -240,6 +242,20 @@ desc="Ask for $name providers"
 task="pkgask"
 }
 
+append_compileflags() {
+touch $hanhdir/.temp-buildhanh || die Failed to create temporary file
+for cfl in $*; do
+	unset flag_name flag_val
+	cfl=${cfl#-a}
+	flag_name="$(echo $cfl | cut -d '=' -f 1)"
+	flag_val="$(echo $cfl | cut -d '=' -f 2 | sed 's/;/ /g')"
+	echo $flag_name=\"\$$flag_name $flag_val\" >> $hanhdir/.temp-buildhanh
+done
+echo "###### BUILD SCRIPT ######" >> $hanhdir/.temp-buildhanh
+cat "$hanhdir/buildhanh" >> $hanhdir/.temp-buildhanh
+mv $hanhdir/.temp-buildhanh $hanhdir/buildhanh
+}
+
 build() {
 test -n "$USE_FLAGS" && export $USE_FLAGS
 . "$buildfile" || die "Cannot get information from $buildfile"
@@ -387,6 +403,7 @@ for arg in $*; do
 		-fl=*) flag="$(echo $arg | cut -d "=" -f 2)";;
 		-r=*) export dbrepo="$(echo $arg | cut -d "=" -f 2)";;
 		-H=*) export repohook="$(echo $arg | cut -d "=" -f 2)";;
+		-a*) compile_flags="$compile_flags $arg";;
 		-b) action=build;;
 		-F) action=fetch_pkg;;
 		-g) action=gen_archive;;
@@ -397,6 +414,10 @@ done
 
 if test -z "$buildfile"; then
 	buildfile="$hanhdir/buildhanh"
+fi
+
+if test -n "$compile_flags"; then
+	append_compileflags $compile_flags
 fi
 
 $action $misc
