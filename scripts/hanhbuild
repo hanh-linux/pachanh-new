@@ -247,7 +247,7 @@ touch $hanhdir/.temp-buildhanh || die Failed to create temporary file
 for cfl in $*; do
 	cfl=${cfl#-a}
 	flag_var="$(echo $cfl | cut -d '=' -f 1)"
-	flag_val="$(echo $cfl | cut -d '=' -f 2 | sed 's/:/ /')"
+	flag_val="$(echo ${cfl#$flag_var=} | sed 's/:/ /')"
 	echo $flag_var=\"\$$flag_var $flag_val\" >> $hanhdir/.temp-buildhanh
 done
 cat "$hanhdir/buildhanh" >> $hanhdir/.temp-buildhanh
