@@ -59,7 +59,10 @@ for x in $*; do
 			for z in $(cat "$mirror/$y"); do
 					fetch $z/$x/buildhanh
 					if test -f "$(pwd)/buildhanh"; then
-						fetched=1 
+						fetched=1
+						mkdir $(pwd)/$x
+						mv buildhanh $(pwd)/$x
+						cd $(pwd)/$x
 						. "$(pwd)/buildhanh"
 						for t in $attach; do 
 							fetch $z/$x/$t

@@ -59,8 +59,10 @@ int checkDir(const char *obj, const char *msg) {
 		code = 1;
 	}
 	else {
-		printf("Failed to open %s: %s", obj, strerror(errno));
-		exit(errno);
+		if ((strcmp(msg, "silent")) != 0) {
+			printf("Failed to open %s: %s", obj, strerror(errno));
+		}
+		code = 1;
 	} 
 	return code; 
 }
