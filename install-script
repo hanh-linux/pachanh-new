@@ -53,7 +53,7 @@ run cp -r etc/*.conf out/
 run cp -r scripts/hanhbuild out/hanhbuild
 
 run sed "s|SYSROOT|$SYSROOT|g" -i out/hanh.conf out/hanhbuild.conf
-run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c
+run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c out/hanhbuild.conf
 run sed "s|prefix|$PREFIX|g" -i out/hanh.c
 cd out/
 CC=$CC CFLAGS="$CFLAGS" ./build 
