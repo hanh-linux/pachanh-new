@@ -21,13 +21,18 @@ pachanh-new will be POSIX C and `sh` compatible.
 - `mv`
 - `cp`
 - `type` (`posh` may not work properly, better disable build flavor)
+- `fakeroot`
+
+**Runtime libraries**
+- POSIX C library (tested with `glibc`, `musl` and `bionic`)
+- `libconfuse`
 
 **Buildtime binaries**
 - `install`
 - A C compiler (`clang` is used by default)
 - A linker (`-fuse-ld=<linker>`, depends on compiler support)
 
-**Library**: Tested with `glibc` or `musl`, should work with any libc that provides POSIX C headers
+**Library**: Tested 
 #### Compilation
 - Clone this repo and `cd` to it
 - Run `./install-script action=HELP` to get more infomation 
