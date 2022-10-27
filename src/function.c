@@ -129,3 +129,12 @@ int clearTmp(const char *tmpdir) {
 
 	return code;
 }
+
+int getSize(const char *fpath) {
+	FILE *file = fopen(fpath, "r");
+	fseek(file, 0, SEEK_END);
+	int size = ftell(file); 
+	fseek(file, 0, SEEK_SET); 
+	
+	return size;
+} 

@@ -125,9 +125,7 @@ void removeOld(const char *root, const char *tmp) {
 	snprintf(filelistpath, __PATH, "%s/oldfiles", tmp);
 
 	FILE *filelist = fopen(filelistpath, "r");
-	fseek(filelist, 0, SEEK_END);
-	int size = ftell(filelist); 
-	fseek(filelist, 0, SEEK_SET); 
+	int size = getSize(filelistpath);
 	char filec[size];
 	fread(filec, size, 1, filelist);
 	filec[size] = 0; 
@@ -146,8 +144,7 @@ void removeOld(const char *root, const char *tmp) {
 	fclose(filelist); 
 }
 
-
-int INSTALL(char packages[], const char *root, const int nodepends, const long int verbose) {
+int LOCALINSTALL(char packages[], const char *root, const int nodepends, const long int verbose) {
 	char *pkgBuf = NULL; 
 	char *pkg  = strtok_r(packages, " ", &pkgBuf); 
 	int  code    = 0; 
@@ -165,7 +162,7 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		char preupgrade[__PATH] = ""             ;
 		char aftupgrade[__PATH] = ""             ;
 
-		// Parse config for name, depends, contain (package provide part), config (to backup), pkg_infordir 
+		// Parse config for name, depends, contain (package provide part), config (to backup), pkg_infodir 
 		char *name        = NULL                 ;
 		char *version     = NULL                 ;
 		char *desc        = NULL                 ;
@@ -278,5 +275,241 @@ int INSTALL(char packages[], const char *root, const int nodepends, const long i
 		pkg = strtok_r(NULL, " ", &pkgBuf); 
 	}
 	printf("\n\n");
+	return code;
+}
+
+int PACKAGEINSTALL(char packages[], const char *root, const char *mirror, const char *download, char allrepo[], const int nodepends, const long int verbose) {
+	char *pkgBuf         = NULL; 
+	char *pkg            = strtok_r(packages, " ", &pkgBuf); 
+	int  code            = 0;
+	int  repoBufSize     = strlen(allrepo);
+	int  file            = 1;
+
+	while (pkg != NULL) {
+		file = checkPath(pkg, "silent");
+		// If it is a package tarball, install it into sysroot
+		if (file == 0) {
+			if (verbose != 0) debug("Installing local package");
+			code = LOCALINSTALL(pkg, root, nodepends, verbose);
+			checkCode(code);
+		}
+		else {
+			if (verbose != 0) debug("Trying to find for remote package");
+			printf("Checking if %s has a binary release\n", pkg);
+			
+			char allRepo[repoBufSize]; 
+			strcpy(allRepo, allrepo);
+			char *repoBuf = NULL; 
+			char *repo    = strtok_r(allRepo, " ", &repoBuf); 
+			int  success  = 1;
+			int  found    = 0;
+			int  relcode  = 0;
+			while (repo != NULL) {
+				char pkgpath[__PATH]  = "";
+				char repopath[__PATH] = "";
+				snprintf(pkgpath , __PATH, "%s/var/lib/pachanh/remote/%s/%s/release", root, repo, pkg);
+				snprintf(repopath, __PATH, "%s/%s", mirror, repo); 
+			
+				// Check if package is available and binary supported
+				relcode = checkPath(pkgpath, "silent");
+				if (relcode == 0) {
+					FILE *mirFile = fopen(repopath, "r"); 
+					int msize = getSize(repopath); 
+					char allMir[msize]; 
+					allMir[msize] = '\0';
+					fread(allMir, msize, 1, mirFile);
+	
+					char allmir[msize]; 
+					strcpy(allmir, allMir); 
+
+					FILE *pkgRel = fopen(pkgpath, "r");
+					int tsize = getSize(pkgpath);
+					char pkgTar[tsize];
+					pkgTar[tsize] = '\0';
+					fread(pkgTar, tsize, 1, pkgRel);
+					pkgTar[strcspn(pkgTar, "\n")] = 0;
+
+					char pathtopkg[__PATH] = "";
+					snprintf(pathtopkg, __CMD, "%s/var/cache/pachanh/tarballs/packages/%s", root, pkgTar);
+					found = checkPath(pathtopkg, "silent"); 
+					if (found == 0) {
+						printf("WARNING: Package downloaded earlier. Using it\n");
+						code = LOCALINSTALL(pathtopkg, root, nodepends, verbose); 
+						checkCode(code);
+						success = 0;
+					}
+					else {
+						// Try to fetch package
+						printf("Fetching %s from remote\n", pkg);
+						char *urlBuf = NULL;
+						char *url    = strtok_r(allmir, "\n", &urlBuf);
+						
+						while (url != NULL) {
+							char fetchCmd[__CMD] = ""; 
+							snprintf(fetchCmd, __CMD, "%s -O %s %s/binaries/%s", download, pathtopkg, url, pkgTar);
+		
+							// Use process exit code to detect if the package is fetched (should we?)
+							success = system(fetchCmd);
+							if (success == 0) {
+								if (verbose != 0) debug("Installing fetched package");
+								code = LOCALINSTALL(pathtopkg, root, nodepends, verbose);
+								checkCode(code);
+								break;
+							}
+		
+							url = strtok_r(NULL, "\n", &urlBuf);
+						}
+					}
+					fclose(pkgRel);
+					fclose(mirFile);
+	
+					if (success != 0) {
+						die("Failed to fetch package from remote", success);
+					}
+				}
+				repo = strtok_r(NULL, " ", &repoBuf); 
+			}
+			if (relcode != 0) die("Package doesn't exist or doesn't have binary release", relcode);
+		}
+		pkg = strtok_r(NULL, " ", &pkgBuf);
+	}
+	return code;
+}
+
+int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot, const long int verbose) {
+	char *stageBuf           = NULL; 
+	char *stageFile          = strtok_r (tarballs, " ", &stageBuf);
+	int  code                = 0; 
+	int  found               = 1;
+
+	while (stageFile != NULL) {
+		found = checkPath(stageFile, "silent");
+		if (found != 0) {
+			printf("ERROR: %s not found\n", stageFile);
+			exit(found);
+		}
+		printf("Unpacking stage tarball\n");
+		// Unpack the information file first to get stage tarball name
+		code = untar(installRoot, stageFile);
+		checkCode(code);
+	
+		char runScript[__PATH]  = "";
+		char scriptPath[__PATH] = "";
+		char stageCfg[__PATH]   = "";
+		char tarCfg[__PATH]     = ""; 
+		char *sName             = NULL; 
+		char *sVer              = NULL; 
+		char *sDesc             = NULL;
+		snprintf(stageCfg,  __PATH, "%s/stage-info", installRoot);
+
+		cfg_opt_t opts[] = {
+		CFG_SIMPLE_STR("name", &sName),
+		CFG_SIMPLE_STR("ver",  &sVer), 
+		CFG_SIMPLE_STR("desc", &sDesc),
+		CFG_END()
+		};
+		cfg_t *cfg = cfg_init(opts, 0); 
+		cfg_parse(cfg, stageCfg);
+
+		// Trigger the stage script if it is presented
+		snprintf(scriptPath, __PATH, "%s/var/lib/pachanh/system/stage/%s/script", installRoot, sName); 
+		snprintf(runScript, __PATH, "sh %s", scriptPath);
+		if ((checkPath(scriptPath, "silent")) == 0) {
+			code = system(runScript);
+			if (code != 0) die("Failed to trigger stage script", code);
+		}
+
+		stageFile = strtok_r(NULL, " ", &stageBuf);
+	}
+	return code;
+}
+
+int STAGEINSTALL(char tarballs[], const char *root, const char *mirror, const char *download, const long int verbose) {
+	char *stageBuf  = NULL; 
+	char *stageFile = strtok_r(tarballs, " ", &stageBuf);
+	int  code       = 0;
+	int  found      = 0;
+	int  fetched    = 0;
+	int  success    = 1;
+	char sRepo[__PATH] = "";
+	char installRoot[__PATH] = "";
+	snprintf(sRepo, __PATH, "%s/stage", mirror);
+
+	printf("Please enter path you want to install the tarball: \n");
+	fgets(installRoot, __PATH, stdin);
+	// If no specified root, we will install it to system (sysroot)
+	if (installRoot[0] == '\0') 
+		strcpy(installRoot, root);
+	// Check if installRoot directory exists
+	int rootFound = checkDir(installRoot, "silent");
+	while (rootFound != 0) {
+		err("Path to specified root not found, enter it again: ");
+		fgets(installRoot, __PATH, stdin);
+		rootFound = checkDir(installRoot, "silent");
+	}
+
+	while (stageFile != NULL) {
+		success = 1;
+		int found = checkPath(stageFile, "silent"); 
+		if (found == 0) {
+			code = LOCALSTAGEINSTALL(stageFile, root, installRoot, verbose);	
+		}
+		else {
+			printf("Checking if remote has a %s stage tarball\n", stageFile);
+			char stageNamePath[__PATH] = ""; 
+			snprintf(stageNamePath, __PATH, "%s/var/lib/pachanh/remote/stage/%s", root, stageFile); 
+
+			found = checkPath(sRepo, "silent"); 
+			if (found != 0)
+				die("Your system does not have the stage repository", 1); 
+			
+			found = checkPath(stageNamePath, "silent");
+			if (found != 0) {
+				printf("ERROR: %s stage tarball is not available\n", stageFile);
+				exit(1);
+			}
+			else {
+				FILE *repoFile = fopen(sRepo, "r"); 
+				int  rSize     = getSize(sRepo); 
+				char allMir[rSize]; 
+				allMir[rSize] = '\0'; 
+				fread(allMir, rSize, 1, repoFile);
+				
+				printf("Fetching %s.stage\n", stageFile);
+				char *urlBuf = NULL; 
+				char *url    = strtok_r(allMir, "\n", &urlBuf); 
+				while (url != NULL) {
+					char fetchCmd[__PATH] = "";
+					char pathtostage[__PATH] = ""; 
+					snprintf(pathtostage, __PATH, "%s/var/cache/pachanh/tarballs/stage/%s.stage", root, stageFile);
+					snprintf(fetchCmd, __PATH, "%s -o %s %s/stage/%s.stage", download, pathtostage, url, stageFile);
+					
+					success = system(fetchCmd);
+					if (success == 0) {
+						code = LOCALSTAGEINSTALL(pathtostage, root, installRoot, verbose);
+						checkCode(code);
+						break;
+					}
+
+				url = strtok_r(NULL, "\n", &urlBuf); 	
+				}
+			}
+		if (success != 0) die("Failed to fetch required stage tarball", success); 
+	}
+	stageFile = strtok_r(NULL, "\n", &stageBuf);
+	}
+	return code;
+}
+
+int INSTALL(char packages[], const char *mode, const char *root, const char *mirror, const char *download, char allrepo[], const int nodepends, const long int verbose) {
+	int code = 0;
+	if ((strcmp(mode, "packages")) == 0) {
+		// int PACKAGEINSTALL(char packages[], const char *root, const char *mirror, const char *download, char allrepo[], const int nodepends, const long int verbose)
+		code = PACKAGEINSTALL(packages, root, mirror, download, allrepo, nodepends, verbose);
+	}
+	else if ((strcmp(mode, "stage")) == 0) {
+		// int STAGEINSTALL(char tarballs[], const char *root, const char *mirror, const char *download, const long int verbose)
+		code = STAGEINSTALL(packages, root, mirror, download, verbose); 
+	}
 	return code;
 }
