@@ -106,7 +106,7 @@ void checkConfig(const char *root, char config[]) {
 	while (cfgfile != NULL) {
 		char configFullPath[__PATH] = "";
 		snprintf(configFullPath, __PATH, "%s/%s", root, cfgfile);
-		if ((checkPath(configFullPath, "silent")) != 0) {
+		if ((checkFile(configFullPath, "silent")) != 0) {
 		// rename() will fail to execute if package file is installed in a 
 		// separate partition, better use system `mv`
 		char mvcmd[__CMD] = ""; 
@@ -156,6 +156,7 @@ int LOCALINSTALL(char packages[], const char *root, const int nodepends, const l
 		char header[__PATH]  = ""                ;
 		char tarHead[__ARG]  = ""                ; 
 		char hook[__ARG]     = ""                ;
+		char Hook[__PATH]    = ""                ;
 
 		char preinstall[__PATH] = ""             ;
 		char aftinstall[__PATH] = ""             ;
@@ -171,6 +172,7 @@ int LOCALINSTALL(char packages[], const char *root, const int nodepends, const l
 		char *config      = NULL                 ; 
 		char *pkg_infodir = NULL                 ;
 		
+		snprintf(Hook   , __PATH, "%s/hook"                               , root          );
 		snprintf(header , __PATH, "%s/pre-install"                        , tmp           );
 		snprintf(rhead  , __PATH, "%s/pre-install"                        , root          ); 
 		snprintf(tarHead, __ARG , "%s pre-install"                        , pkg           );
@@ -264,6 +266,8 @@ int LOCALINSTALL(char packages[], const char *root, const int nodepends, const l
 		if (verbose != 0) debug("Cleaning up");
 		code = remove(rhead); 
 		checkCode(code);
+		code = remove(Hook); 
+		checkCode(code);
 		code = clearTmp(tmp); 
 		checkCode(code);
 		if (installCode != 0) {
@@ -286,7 +290,7 @@ int PACKAGEINSTALL(char packages[], const char *root, const char *mirror, const 
 	int  file            = 1;
 
 	while (pkg != NULL) {
-		file = checkPath(pkg, "silent");
+		file = checkFile(pkg, "silent");
 		// If it is a package tarball, install it into sysroot
 		if (file == 0) {
 			if (verbose != 0) debug("Installing local package");
@@ -311,7 +315,7 @@ int PACKAGEINSTALL(char packages[], const char *root, const char *mirror, const 
 				snprintf(repopath, __PATH, "%s/%s", mirror, repo); 
 			
 				// Check if package is available and binary supported
-				relcode = checkPath(pkgpath, "silent");
+				relcode = checkFile(pkgpath, "silent");
 				if (relcode == 0) {
 					FILE *mirFile = fopen(repopath, "r"); 
 					int msize = getSize(repopath); 
@@ -331,7 +335,7 @@ int PACKAGEINSTALL(char packages[], const char *root, const char *mirror, const 
 
 					char pathtopkg[__PATH] = "";
 					snprintf(pathtopkg, __CMD, "%s/var/cache/pachanh/tarballs/packages/%s", root, pkgTar);
-					found = checkPath(pathtopkg, "silent"); 
+					found = checkFile(pathtopkg, "silent"); 
 					if (found == 0) {
 						printf("WARNING: Package downloaded earlier. Using it\n");
 						code = LOCALINSTALL(pathtopkg, root, nodepends, verbose); 
@@ -383,7 +387,7 @@ int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot
 	int  found               = 1;
 
 	while (stageFile != NULL) {
-		found = checkPath(stageFile, "silent");
+		found = checkFile(stageFile, "silent");
 		if (found != 0) {
 			printf("ERROR: %s not found\n", stageFile);
 			exit(found);
@@ -414,7 +418,7 @@ int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot
 		// Trigger the stage script if it is presented
 		snprintf(scriptPath, __PATH, "%s/var/lib/pachanh/system/stage/%s/script", installRoot, sName); 
 		snprintf(runScript, __PATH, "sh %s", scriptPath);
-		if ((checkPath(scriptPath, "silent")) == 0) {
+		if ((checkFile(scriptPath, "silent")) == 0) {
 			code = system(runScript);
 			if (code != 0) die("Failed to trigger stage script", code);
 		}
@@ -450,7 +454,7 @@ int STAGEINSTALL(char tarballs[], const char *root, const char *mirror, const ch
 
 	while (stageFile != NULL) {
 		success = 1;
-		int found = checkPath(stageFile, "silent"); 
+		int found = checkFile(stageFile, "silent"); 
 		if (found == 0) {
 			code = LOCALSTAGEINSTALL(stageFile, root, installRoot, verbose);	
 		}
@@ -459,11 +463,11 @@ int STAGEINSTALL(char tarballs[], const char *root, const char *mirror, const ch
 			char stageNamePath[__PATH] = ""; 
 			snprintf(stageNamePath, __PATH, "%s/var/lib/pachanh/remote/stage/%s", root, stageFile); 
 
-			found = checkPath(sRepo, "silent"); 
+			found = checkFile(sRepo, "silent"); 
 			if (found != 0)
 				die("Your system does not have the stage repository", 1); 
 			
-			found = checkPath(stageNamePath, "silent");
+			found = checkFile(stageNamePath, "silent");
 			if (found != 0) {
 				printf("ERROR: %s stage tarball is not available\n", stageFile);
 				exit(1);

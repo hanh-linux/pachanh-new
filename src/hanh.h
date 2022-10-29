@@ -23,7 +23,8 @@ void checkCode(const int code);
 void debug(const char *msg);
 
 int checkEmpty(const char *obj, const char *msg); 
-int checkPath(const char *obj, const char *msg); 
+int checkPath(const char *obj, const char *msg);
+int checkFile(const char *obj, const char *msg);
 int checkDir(const char *obj, const char *msg); 
 int checkDeps(const char *root, char depends[]);
 int checkInstalled(const char *root, const char *pkg); 

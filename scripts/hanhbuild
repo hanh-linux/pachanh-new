@@ -29,6 +29,8 @@ echo "-I                           Ignore error (if package not found)"
 echo "Options <for database only>:"
 echo "-r=<name>                    Repository name"
 echo "-H=<path>                    Hook script"
+echo "Variable: "
+echo "optarg=<arg>                 Optional arguements for package installation"
 echo "(*): Please use ':' instead of ' ' for separating variable value"
 exit 0
 }
@@ -43,6 +45,24 @@ exit 1
 
 fetch() {
 eval "$downloader $*" || die "Failed to fetch source"
+}
+
+fetch_sources() {
+if ! test -f "$hanhdir/$(basename $*)" && ! test -d "$hanhdir/$(basename $*)"; then
+	case $* in
+		"http*") 
+			fetch "$*" || die;;
+		"git::*")  
+			git clone ${*#git::} $hanhdir/$(basename $*) || die "Failed to fetch source";;
+		"commit::*") 
+			link="$(echo $* | cut -d '%' -f 1)";
+			commit="$(echo $* | cut -d '%' -f 2)";
+			git clone ${link#git::} $hanhdir/$(basename $*) || die "Failed to fetch source";
+			cd $hanhdir/$(basename $*); 
+			git checkout $commit;
+			cd $hanhdir;;
+	esac
+fi
 }
 
 fetch_pkg() {
@@ -115,8 +135,8 @@ fi
 
 check_files() {
 for x in $*; do
-	if ! test -f "$hanhdir"/"$x"; then 
-		die "$x not found!"
+	if ! test -f "$hanhdir"/"$x" && ! test -d "$hanhdir/$x"; then
+		die "$x not found"
 	fi
 done
 }
@@ -148,6 +168,10 @@ gen_db() {
 . $buildfile || die
 echo "$name-$ver" > data
 echo "$desc" >> data
+
+if test -n "$binary"; then
+	echo "$tarball" > release
+fi
 }
 
 gen_archive() {
@@ -162,7 +186,7 @@ rm -rf $dbrepo && mkdir $dbrepo
 for pkgdir in $(ls); do  
 	if test "$pkgdir" != "$dbrepo"; then  
 		mkdir $cwd/$dbrepo/$pkgdir 
-		cd $cwd/$pkgdir 
+		cd $cwd/$pkgdir
 		buildfile=$cwd/$pkgdir/buildhanh gen_db
 		mv data $cwd/$dbrepo/$pkgdir/ 
 		cd ..
@@ -172,6 +196,7 @@ done
 cd $dbrepo 
 install -Dm755 $repohook .
 tar -cJf $cwd/$dbrepo.database *
+echo "Generated database information successfully: $dbrepo.database"
 }
 
 gen_info() {
@@ -201,6 +226,25 @@ echo "depends=\"$depends\"" >> "$HEADER"
 echo "contain=\"$contain\"" >> "$HEADER"
 echo "config=\"$config\"" >> "$HEADER"
 echo "pkg_infodir=\"var/lib/pachanh/system/$name\"" >> "$HEADER"
+}
+
+
+gen_pkginfo() {
+cd $pkgdir
+infodir=$pkgdir/var/lib/pachanh/system/"$name"
+mkdir -p "$infodir"
+
+check_contain $contain
+check_config  $config
+
+touch "$infodir"/filelist
+gen_info "$infodir"/info
+gen_header "$pkgdir"/pre-install
+gen_filelist "$infodir"/filelist
+if test -f "$hanhdir"/"$hook"; then 
+	install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/hook
+	install -Dm755 "$hanhdir"/"$hook" "$infodir"/hook
+fi
 }
 
 ask() {
@@ -267,7 +311,7 @@ fi
 
 cd $hanhdir
 
-tarball="$name"-"$ver".hanhpkg.tar.xz
+tarball="$name"-"$ver".hanhpkg
 
 if test -n "$syscompare"; then 
 	compare_sysver $name 
@@ -316,7 +360,7 @@ fi
 
 echo "Fetching sources..."
 for url in $sources; do
-	fetch $url || die "Failed to fetch sources"
+	fetch_sources $url || die "Failed to fetch sources"
 done
 
 check_files $files 
@@ -346,7 +390,11 @@ for func in $task; do
 	fi
 
 	if test -z $run_compile; then 
-		eval "$func" || die "Failed to run function $func"
+		if test "$func" == "mkpkg"; then 
+			fakeroot "$func" || die "Failed to run function $func"
+		else
+			eval "$func" || die "Failed to run function $func"
+		fi
 	fi
 
 	if test "$func" = "mkpkg"; then
@@ -355,32 +403,18 @@ for func in $task; do
 done
 
 if test -n "$repack"; then
-	cd $pkgdir
-	infodir=$pkgdir/var/lib/pachanh/system/"$name"
-	mkdir -p "$infodir"
-
-	check_contain $contain
-	check_config  $config
-	
-	touch "$infodir"/filelist
-	gen_info "$infodir"/info
-	gen_header "$pkgdir"/pre-install
-	gen_filelist "$infodir"/filelist
-	if test -f "$hanhdir"/"$hook"; then 
-		install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/hook
-		install -Dm755 "$hanhdir"/"$hook" "$infodir"/hook
-	fi
-	
+	fakeroot gen_pkginfo || die "Failed to generate package information"
+		
 	cd "$pkgdir"
 	tar -cJf "$hanhdir"/"$tarball" *	
-	echo "Package $tarball created."
+	echo "Build successfully: $tarball"
 	
 	if test -z "$install"; then 
 		install=$install_later
 	fi
 
 	if test -n "$install"; then 
-		hanh -i $hanhdir/$name-$ver.hanhpkg.tar.xz 
+		hanh $optargs -i $hanhdir/$tarball
 	fi
 fi
 unset install_later install

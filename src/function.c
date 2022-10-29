@@ -44,7 +44,24 @@ int checkPath(const char *obj, const char *msg) {
 	return code; 
 	}
 
-// We don't believe in returned value of stat function
+int checkFile(const char *obj, const char *msg) {
+	struct stat buf; 
+	stat(obj, &buf);
+	int code = S_ISREG(buf.st_mode);
+	if (code == 0)
+		code = 1; 
+	else 
+		code = 0; 
+
+	if (code != 0) {
+		if ((strcmp(msg, "silent")) != 0) {
+			printf("%s not found or not a file\n", msg);
+		}
+	}
+	return code;
+}
+
+// We don't believe in returned value of stat function (for directory)
 // Using opendir() to do it (<dirent.h> is not available on Windows)
 int checkDir(const char *obj, const char *msg) {
 	DIR *dir = opendir(obj);
