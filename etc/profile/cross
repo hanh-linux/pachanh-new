@@ -1,0 +1,43 @@
+#!/hint/sh
+
+# Build flags
+USE_FLAGS="$USE_FLAGS CC CXX AR RANLIB LD NM STRIP OBJCOPY OBJDUMP READELF SIZE HOSTCC HOSTCXX HOSTLD CFLAGS CXXFLAGS CHOST CBUILD CARCH LDFLAGS"
+CARCH=
+CHOST=
+CBUILD=
+
+CC="$CHOST-"
+CXX="$CHOST-"
+AR="$CHOST-ar"
+RANLIB="$CHOST-ranlib"
+LD="$CHOST-"
+NM="$CHOST-nm"
+STRIP="$CHOST-strip"
+OBJCOPY="$CHOST-objcopy"
+OBJDUMP="$CHOST-objdump"
+READELF="$CHOST-readelf"
+SIZE="$CHOST-size"
+
+HOSTCC=""
+HOSTCXX=""
+HOSTLD=""
+
+# CFLAGS 
+# -march=<arch>
+# -O<level>
+# -pipe
+# For Clang/LLVM 
+# -stdlib=<C++ library>
+# -unwindlib=<unwind library>
+# -rtlib=<runtime library>
+# --ld-path=<path to linker>
+# --target=<target triple, usually $CHOST>
+# -Wno-unused-command-line-argument
+# --sysroot=
+# -isystem <path to cross-compilation include dir>
+
+CFLAGS=""
+CXXFLAGS=""
+
+# LDFLAGS 
+LDFLAGS=""

@@ -1,0 +1,14 @@
+#!/hint/sh 
+# Based on makepkg.conf DOC_DIRS
+
+DOC_DIRS="\
+	$prefix/share/doc \
+	$prefix/share/gtk-doc"
+
+remove_doc() {
+for docdir in $DOC_DIRS; do
+	rm -rf $pkgdir/$docdir
+done
+}
+
+mkpkg_task="$mkpkg_task remove_doc"

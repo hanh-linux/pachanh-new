@@ -1,0 +1,4 @@
+#!/hint/sh
+
+CFLAGS="$CFLAGS -g"
+CXXFLAGS="$CXXFLAGS -g"

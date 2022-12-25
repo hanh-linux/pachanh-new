@@ -23,6 +23,8 @@ int main(int argc, char **argv)
 	char installtype[__ARG]    = ""  ;
 	char source[__ARG]         = ""  ;
 	char buildlist[__PATH]     = ""  ;
+	char installRoot[__PATH]   = ""  ;
+	char *env_optarg                 ;
 
 	static char *sysroot       = NULL;
 	static char *download      = NULL;
@@ -42,12 +44,13 @@ int main(int argc, char **argv)
 		{"download",   1, 0, 'd'},
 		{"nodeps",     0, 0, 'D'}, 
 		{"infotype",   1, 0, 't'},
-		{"installtype",1, 0, 'I'},
+		{"instype",    1, 0, 'I'},
 		{"buildtype",  1, 0, 'b'},
 		{"where",      1, 0, 'w'},
 		{"help",       0, 0, 'h'},
 		{"version",    0, 0, 'v'},
 		{"buildlist",  1, 0, 'B'},
+		{"stageroot",  1, 0, 'T'},
 		{NULL, 0, NULL, 0}
 	};
 	
@@ -63,7 +66,7 @@ int main(int argc, char **argv)
 	cfg_parse(cfg, "CONFDIR/hanh.conf");
 	
 	/* Working with command-line argument. Here we use POSIX getopt() function. */
-	while ((opt = getopt_long(argc, argv, "irqsfShvR:d:m:t:DI:b:B:", long_opts, NULL)) != -1){
+	while ((opt = getopt_long(argc, argv, "irqsfShvR:d:m:t:DI:b:B:T:", long_opts, NULL)) != -1){
 		switch (opt) {
 			
 			case 'h': 
@@ -133,6 +136,10 @@ int main(int argc, char **argv)
 			case 'w': 
 			strcpy(source, optarg); 
 			break;
+
+			case 'T': 
+			strcpy(installRoot, optarg);
+			break;
 			
 			case '?':
 			printf("Please use \"hanh -h\" for more information\n");
@@ -155,6 +162,12 @@ int main(int argc, char **argv)
 		strcpy(source, "remote");
 	if (buildlist[0] == '\0')
 		snprintf(buildlist, __PATH, "%s/var/lib/pachanh/system/pkgorder", sysroot);
+	if (installRoot[0] == '\0') 
+		strcpy(installRoot, sysroot);
+
+	env_optarg = getenv("optarg");
+	if (env_optarg == NULL)
+		env_optarg = " ";
 
 	if (verbose != 0) {
 		printf("[DEBUG] Variables: \n");
@@ -181,7 +194,7 @@ int main(int argc, char **argv)
 		break;
 	
 		case 1:
-		exitcode = INSTALL(packages, installtype, sysroot, mirror, download, repo, nodeps, verbose);
+		exitcode = INSTALL(packages, env_optarg, installtype, installRoot, sysroot, mirror, download, repo, nodeps, verbose);
 		checkCode(exitcode);
 		break;
 

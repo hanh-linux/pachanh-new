@@ -1,0 +1,9 @@
+#!/hint/sh
+
+rm_libtool_archive() {
+for la in $(find $pkgdir -name '*.la'); do 
+	rm -rf $la
+done
+}
+
+mkpkg_task="$mkpkg_task rm_libtool_archive"

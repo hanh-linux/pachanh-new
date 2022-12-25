@@ -1,0 +1,14 @@
+#!/hint/sh
+# Based on makepkg.conf
+
+bin_opts="--strip-all"
+shared_opts="--strip-unneeded"
+static_opts="--strip-debug"
+
+mkpkg_task="$mkpkg_task strip_all"
+
+strip_all() {
+	eval $STRIP $bin_opts $(find $pkgdir/*/bin)
+	eval $STRIP $shared_opts $(find $pkgdir/ -type -f -name '*.so')
+	eval $STRIP $static_opts $(find $pkgdir/ -type -f -name '*.a')
+}

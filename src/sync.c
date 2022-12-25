@@ -1,6 +1,6 @@
 #include "hanh.h"
 
-int SYNC(char repositories[], const char *root, const char *mirror, const char *fetchCmd, const int verbose) {
+int SYNC(char repositories[], const char *root, const char *mirror, const char *fetchCmd, const long int verbose) {
 	char cwd[__PATH] = "";
 	char remotePath[__PATH] = ""; 
 	char *rBuf = NULL; 
@@ -37,7 +37,7 @@ int SYNC(char repositories[], const char *root, const char *mirror, const char *
 			char repoUpdate[__PATH] = ""; 
 			char triggerCmd[__CMD]  = ""; 
 
-			snprintf(fetchdb, __CMD, "%s %s/%s.database", fetchCmd, mir, repo);
+			snprintf(fetchdb, __CMD, "%s %s.database %s/%s.database", fetchCmd, repo, mir, repo);
 			snprintf(database, __PATH, "%s/%s.database", remotePath, repo);
 			snprintf(repoUpdate, __PATH, "%s/%s/%s.sh", remotePath, repo, repo); 
 			snprintf(triggerCmd, __CMD, "sh %s", repoUpdate);

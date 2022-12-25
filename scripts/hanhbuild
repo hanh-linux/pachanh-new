@@ -2,6 +2,7 @@
 version=2.0
 remote=/var/lib/pachanh/remote
 system=/var/lib/pachanh/system
+hanhdir=$(pwd)
 
 print_help() {
 echo "hanhbuild - Hanh Linux packages builder"
@@ -31,9 +32,11 @@ echo "-r=<name>                    Repository name"
 echo "-H=<path>                    Hook script"
 echo "Variable: "
 echo "optarg=<arg>                 Optional arguements for package installation"
+echo "Please ensure that all paths do not have any special characters and space"
 echo "(*): Please use ':' instead of ' ' for separating variable value"
 exit 0
 }
+
 err() {
 echo "ERROR: $*"
 }
@@ -43,26 +46,52 @@ err "$*"
 exit 1
 }
 
+parse_srcargs() {
+unset localname remotetype remoteurl gitcommit
+localname="$1"
+remotetype="$2"
+remoteurl="$3"
+gitcommit="$4"
+}
+
 fetch() {
-eval "$downloader $*" || die "Failed to fetch source"
+eval "$downloader $1 $2" || die "Failed to fetch source"
 }
 
 fetch_sources() {
-if ! test -f "$hanhdir/$(basename $*)" && ! test -d "$hanhdir/$(basename $*)"; then
-	case $* in
-		"http*") 
-			fetch "$*" || die;;
-		"git::*")  
-			git clone ${*#git::} $hanhdir/$(basename $*) || die "Failed to fetch source";;
-		"commit::*") 
-			link="$(echo $* | cut -d '%' -f 1)";
-			commit="$(echo $* | cut -d '%' -f 2)";
-			git clone ${link#git::} $hanhdir/$(basename $*) || die "Failed to fetch source";
-			cd $hanhdir/$(basename $*); 
-			git checkout $commit;
-			cd $hanhdir;;
+for src in $*; do 
+	srcargs="$(echo $src | sed "s/::/ /g")"
+	parse_srcargs $srcargs
+	if ! test -f "$localname"; then
+		if test -z $remotetype; then 
+			die "$localname not found!"
+		else
+			if test -z "$remoteurl"; then 
+				die "Remote type specified but remote source not found!"
+			fi
+			case $remotetype in
+				file ) 
+					fetch $hanhdir/$localname $remoteurl || die "Failed to fetch source (file :$localname)";;
+				git  ) 
+					git clone $remoteurl $workdir/$localname || die "Failed to fetch source (git: $localname)";
+					rm -rf $hanhdir/$localname/.git;;
+				commit ) 
+					git clone $remoteurl $workdir/$localname || die "Failed to fetch source (git commit: $localname)";
+					cd $workdir/$localname
+					git checkout $gitcommit;
+					cd $hanhdir;;
+			esac
+		fi
+	fi
+
+	# Support XZ, GZIP, BZIP2 and ZSTD format
+	case $localname in
+		*.tar.gz|*.tgz|*.tar.bz2|*.tbz2|*.tar.xz|*.txz) 
+			tar -C $workdir -xf $hanhdir/$localname;;
+		*.zst ) 
+			zstd --output-dir-flat $workdir -d $hanhdir/$localname
 	esac
-fi
+done
 }
 
 fetch_pkg() {
@@ -73,40 +102,44 @@ fi
 
 for x in $*; do
 	unset fetched found
-	for y in $repo; do
-		if test -d $sysroot/$remote/$y/$x; then
-			found=1
-			for z in $(cat "$mirror/$y"); do
-					fetch $z/$x/buildhanh
-					if test -f "$(pwd)/buildhanh"; then
-						fetched=1
-						mkdir $(pwd)/$x
-						mv buildhanh $(pwd)/$x
-						cd $(pwd)/$x
-						. "$(pwd)/buildhanh"
-						for t in $attach; do 
-							fetch $z/$x/$t
-						done
-						cd $cwd
-						break
-					fi	
-			done
-		fi
-	done
+	if ! test -d $cwd/$x; then 
+		for y in $repo; do
+			if test -d $sysroot/$remote/$y/$x; then
+				found=1
+				for z in $(cat "$mirror/$y"); do
+						fetch buildhanh $z/$x/buildhanh
+						if test -f "$cwd/buildhanh"; then
+							fetched=1
+							mkdir $cwd/$x
+							mv buildhanh $cwd/$x
+							cd $cwd/$x
+							. "$(pwd)/buildhanh"
+							for t in $attach; do 
+								fetch $t $z/$x/$t
+							done
+							cd $cwd
+							break
+						fi	
+				done
+			fi
+		done
+	else
+		found=1
+	fi
 	if test -z $found; then 
 		if test -z "$ignore"; then 
 			die "Cannot find specified package ($x)"
 		fi
 	fi
+
 done
 }
 
 compare_sysver() {
-unset same initver version
+unset same version
 echo $sysroot/$system/$name/info
 if test -f $sysroot/$system/$name/info; then
-	initver=$(cat $sysroot/$system/$name/info | grep version)
-	version=$(echo $initver | cut -d "=" -f 2 | sed 's/"//g')	
+	version=$(grep version $sysroot/$system/$name/$info | cut -d "=" -f 2 | sed 's/"//g')	
 
 	if test "$ver" == "$version"; then 
 		same=y
@@ -131,28 +164,6 @@ if test -n "$*"; then
 		fi
 	done
 fi
-}
-
-check_files() {
-for x in $*; do
-	if ! test -f "$hanhdir"/"$x" && ! test -d "$hanhdir/$x"; then
-		die "$x not found"
-	fi
-done
-}
-
-check_contain() {
-cd $pkgdir/$system
-for x in $*; do
-	ln -sf "$name" "$x" 
-done
-cd $pkgdir
-}
-
-check_config() {
-for x in $*; do 
-	mv "$pkgdir"/"$x" "$pkgdir"/"$x".newfile
-done
 }
 
 get_flag() {
@@ -183,12 +194,12 @@ if test "$dbrepo" != "$(basename $dbrepo)"; then
 fi 
 
 rm -rf $dbrepo && mkdir $dbrepo
-for pkgdir in $(ls); do  
-	if test "$pkgdir" != "$dbrepo"; then  
-		mkdir $cwd/$dbrepo/$pkgdir 
-		cd $cwd/$pkgdir
-		buildfile=$cwd/$pkgdir/buildhanh gen_db
-		mv data $cwd/$dbrepo/$pkgdir/ 
+for pkg in $(ls); do  
+	if test "$pkg" != "$dbrepo"; then  
+		mkdir $cwd/$dbrepo/$pkg
+		cd $cwd/$pkg
+		buildfile=$cwd/$pkg/buildhanh gen_db
+		mv data $cwd/$dbrepo/$pkg/ 
 		cd ..
 	fi
 done
@@ -199,52 +210,14 @@ tar -cJf $cwd/$dbrepo.database *
 echo "Generated database information successfully: $dbrepo.database"
 }
 
-gen_info() {
-info="${1}"
-echo "name=\"$name\"" >> "$info"
-echo "version=\"$ver\"" >> "$info"
-echo "desc=\"$desc\"" >> "$info"
-echo "home=\"$home\"" >> "$info"
-echo "license=\"$license\"" >> $info
-echo "depends=\"$depends\"" >> "$info"
-echo "contain=\"$contain\"" >> "$info"
-echo "dependants=\"\"" >> "$info"
-}
-
-gen_filelist() {
-FILELIST="${1}"
-cd "${pkgdir}"
-find * | tee "$FILELIST" > /dev/null 2>&1
-}
-
-gen_header() {
-HEADER="${1}"
-echo "name=\"$name\"" >> "$HEADER"
-echo "version=\"$ver\"" >> "$HEADER"
-echo "desc=\"$desc\"" >> "$HEADER"
-echo "depends=\"$depends\"" >> "$HEADER"
-echo "contain=\"$contain\"" >> "$HEADER"
-echo "config=\"$config\"" >> "$HEADER"
-echo "pkg_infodir=\"var/lib/pachanh/system/$name\"" >> "$HEADER"
-}
-
-
-gen_pkginfo() {
-cd $pkgdir
-infodir=$pkgdir/var/lib/pachanh/system/"$name"
-mkdir -p "$infodir"
-
-check_contain $contain
-check_config  $config
-
-touch "$infodir"/filelist
-gen_info "$infodir"/info
-gen_header "$pkgdir"/pre-install
-gen_filelist "$infodir"/filelist
-if test -f "$hanhdir"/"$hook"; then 
-	install -Dm755 "$hanhdir"/"$hook" "$pkgdir"/hook
-	install -Dm755 "$hanhdir"/"$hook" "$infodir"/hook
-fi
+setopts() {
+for opt in $*; do
+	optname=${opt#NO_}
+	case $opt in
+		NO_* ) buildopts="${buildopts#$optname}" ;;
+		*)     buildopts="$buildopts $optname"   ;;
+	esac
+done
 }
 
 ask() {
@@ -302,6 +275,14 @@ mv $hanhdir/.temp-buildhanh $hanhdir/buildhanh
 }
 
 build() {
+for buildopt in $buildopts; do
+	if ! test -f CONFDIR/hanh.d/profile/$buildopt; then 
+		die "Cannot find specified option ($buildopt)"
+	else 
+		. CONFDIR/hanh.d/profile/$buildopt || die "Failed to use $buildopt build profile"
+	fi
+done
+
 test -n "$USE_FLAGS" && export $USE_FLAGS
 . "$buildfile" || die "Cannot get information from $buildfile"
 
@@ -311,8 +292,6 @@ fi
 
 cd $hanhdir
 
-tarball="$name"-"$ver".hanhpkg
-
 if test -n "$syscompare"; then 
 	compare_sysver $name 
 	if test -n "$same"; then 
@@ -321,7 +300,9 @@ if test -n "$syscompare"; then
 	fi
 fi
 
-if test -f "$hanhdir"/"$tarball"; then 
+tarball=$name-$ver.hanhpkg.tar.xz
+
+if test -f "$hanhdir/$tarball" ; then 
 	if test -z "$force"; then 
 		# This won't be listed as error 
 		echo "WARNING: Package built."
@@ -332,13 +313,13 @@ if test -f "$hanhdir"/"$tarball"; then
 	fi
 
 	if test -n "$install"; then
-		hanh -i "$hanhdir"/"$tarball"
+		hanh $optarg -i "$hanhdir"/"$tarball"
 		exit 0
 	fi
 fi
 
 if test -n "$clean"; then
-	rm -rf "$pkgdir" "$workdir" "$hanhdir"/.buildinfo "$hanhdir"/"$tarball" "$hanhdir"/deps
+	rm -rf "$pkgdir" "$workdir" "$hanhdir"/.buildinfo "$hanhdir/$tarball" "$hanhdir"/deps
 fi
 
 rm -rf "$pkgdir"
@@ -358,55 +339,40 @@ if test -z "$nodeps"; then
 	check_deps $depends $mkdeps  
 fi
 
-echo "Fetching sources..."
-for url in $sources; do
-	fetch_sources $url || die "Failed to fetch sources"
-done
-
-check_files $files 
+echo "Checking sources..."
+fetch_sources $sources || die "Failed to get information of sources"
 
 for func in $task; do 
-	unset run_compile
-	echo "Running function $func..."
-	if test "$func" = "compile"; then
-		run_compile=1
-		if test -n "$flavor"; then
-			for flv in $flavor; do 
-				if test -n "$(type compile_$flv | grep function)"; then
-					echo "Using flavor $flv to build."
-					use_flavor=1
-					echo "used=$flv" >> $hanhdir/.buildinfo
-					eval compile_$flv || die "Failed to run function compile_$flv"
-					break
-				fi
-			done
-			if test -z $use_flavor; then 
-				echo "No specfied build flavor found! Using compile by default..."
-				eval compile || die "Failed to run function compile"
-			fi
-		else
-			eval compile || die "Failed to run function compile"
-		fi
+	echo "Running function $func"
+	if test "$func" == mkpkg; then 
+		GEN=1 \
+		pkgdir=$pkgdir \
+		hanhdir=$hanhdir \
+		workdir=$workdir \
+		fakeroot genpkg "$buildfile" installpkg || die "Failed to install package"
+	else
+		eval $func || die Failed to run function $compile
 	fi
-
-	if test -z $run_compile; then 
-		if test "$func" == "mkpkg"; then 
-			fakeroot "$func" || die "Failed to run function $func"
-		else
-			eval "$func" || die "Failed to run function $func"
-		fi
-	fi
-
-	if test "$func" = "mkpkg"; then
-		repack=1;
+	taskname="$func"
+	taskname+="_task"
+	eval all_functasks="\$$taskname"
+	for functask in $all_functasks; do 
+		eval $functask || die "Failed to execute in specified build option ($functask)"
+	done
+	if test "$func" == "mkpkg"; then 
+		repack=1
 	fi
 done
 
 if test -n "$repack"; then
-	fakeroot gen_pkginfo || die "Failed to generate package information"
-		
+	GEN=1 \
+		pkgdir=$pkgdir \
+		hanhdir=$hanhdir \
+		workdir=$workdir \
+		fakeroot genpkg "$buildfile" geninfo || die "Failed to generate package information"
+
 	cd "$pkgdir"
-	tar -cJf "$hanhdir"/"$tarball" *	
+	tar -cJ * -f "$hanhdir"/"$tarball"
 	echo "Build successfully: $tarball"
 	
 	if test -z "$install"; then 
@@ -418,9 +384,10 @@ if test -n "$repack"; then
 	fi
 fi
 unset install_later install
-} 
+}
 
 . CONFDIR/hanhbuild.conf || die "Cannot get information from configuration file."
+
 
 for arg in $*; do
 	case $arg in 

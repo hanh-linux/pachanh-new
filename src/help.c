@@ -21,6 +21,7 @@ void help() {
 	printf("Options: install only\n");
 	printf("-D [--nodeps      ]                       Disable dependencies check\n");
 	printf("-I [--instype     ] [packages/stage]      Modify install type\n");
+	printf("-T [--stageroot   ] <path>                Specify where to install stage tarball\n");
 	printf("Options: snapshot only\n");
 	printf("-b [--buildtype   ] [system/stage]        Modify snapshot buildtype\n");
 	printf("-w [--where       ] [remote/local]        Specify where to build\n"); 

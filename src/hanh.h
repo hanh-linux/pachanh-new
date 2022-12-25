@@ -34,9 +34,9 @@ int clearTmp(const char *tmpdir);
 int getSize(const char *filepath);
 
 void help(); 
-int INSTALL(char packages[], const char *mode, const char *root, const char *mirror, const char *download, char allrepo[], const int nodepends, const long int verbose); 
+int INSTALL(char packages[], const char *opts, const char *mode, const char *insroot, const char *root, const char *mirror, const char *download, char allrepo[], const int nodepends, const long int verbose); 
 int REMOVE(char packages[], const char *root, const char *mode, const long int verbose, const int exitFail);
 int QUERY(char packages[], const char *root, const char *filetype);
-int SYNC(char repositories[], const char *root, const char *mirror, const char *fetchCmd, const int verbose);
+int SYNC(char repositories[], const char *root, const char *mirror, const char *fetchCmd, const long int verbose);
 void FIND(char packages[], const char *root, char repositories[]);
 int SNAPSHOT(const char *root); 

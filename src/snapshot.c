@@ -33,3 +33,5 @@ int SNAPSHOT(const char *root) {
 	}
 	return code; 
 }
+
+int SNAPSHOT(const char *root, const char *installRoot, const int ve) 

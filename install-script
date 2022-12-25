@@ -50,10 +50,10 @@ done
 COMPILE() {
 run cp -r src/* out/ 
 run cp -r etc/*.conf out/ 
-run cp -r scripts/hanhbuild out/hanhbuild
+run cp -r scripts/* out/
 
 run sed "s|SYSROOT|$SYSROOT|g" -i out/hanh.conf out/hanhbuild.conf
-run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c out/hanhbuild.conf
+run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c out/hanhbuild.conf out/genpkg
 run sed "s|prefix|$PREFIX|g" -i out/hanh.c
 cd out/
 CC=$CC CFLAGS="$CFLAGS" ./build 
@@ -65,10 +65,11 @@ run install -dm755 $DESTDIR/$SYSROOT/$PREFIX/bin/
 run install -dm755 $DESTDIR/$SYSROOT/$PREFIX/include/
 run install -dm755 $DESTDIR/$SYSROOT/var/lib/pachanh/system
 run install -dm755 $DESTDIR/$SYSROOT/var/lib/pachanh/remote
-run install -dm755 $DESTDIR/$CONFDIR/hanhmirror.d
+run install -dm755 $DESTDIR/$CONFDIR/hanh.d
 
 run install -Dm755 out/hanh $DESTDIR/$SYSROOT/$PREFIX/bin/hanh 
 run install -Dm755 out/hanhbuild $DESTDIR/$SYSROOT/$PREFIX/bin/hanhbuild
+run install -Dm755 out/genpkg $DESTDIR/$SYSROOT/$PREFIX/bin/genpkg
 
 run install -Dm644 src/hanh.h $DESTDIR/$SYSROOT/$PREFIX/include/hanh.h
 
@@ -76,12 +77,13 @@ if test -z "$keepcfg"; then
 	run install -Dm644 out/hanh.conf $DESTDIR/$CONFDIR/hanh.conf
 	run install -Dm644 out/hanhbuild.conf $DESTDIR/$CONFDIR/hanhbuild.conf
 fi
-}
 
-INSTALL_MIRROR() {
-for x in $(ls mirror/) ; do
-       run install -Dm755 mirror/$x $DESTDIR/$CONFDIR/hanhmirror.d/$x
-done       
+for dir in $etcdirs; do
+	run install -dm755 $DESTDIR/$CONFDIR/hanh.d/$dir 
+	for f in $(ls etc/$dir); do 
+		run install -Dm644 etc/$dir/$f $DESTDIR/$CONFDIR/hanh.d/$dir/$f 
+	done
+done
 }
 
 CLEAN() {
@@ -92,7 +94,7 @@ run mkdir out
 eval "$*"
 
 if test -f config; then
-	. config
+	. config || exit 1
 fi
 
 if test -z "$CC"; then
@@ -109,6 +111,10 @@ fi
 
 if test -z "$CONFDIR"; then
 	CONFDIR="$SYSROOT/etc"
+fi
+
+if test -z "$cfgdirs"; then 
+	etcdirs="mirror profile"
 fi
 
 if test -z "$action"; then

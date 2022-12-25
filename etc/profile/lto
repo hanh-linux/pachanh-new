@@ -1,0 +1,3 @@
+#!/hint/sh
+CFLAGS="$CFLAGS -flto"
+CXXFLAGS="$CXXFLAGS -flto"
