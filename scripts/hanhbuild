@@ -14,6 +14,7 @@ echo "-g                           Create database archive of all packages in cu
 echo "-F                           Fetch package(s) build file(s)"
 echo "-b                           Build packages"
 echo "-gf                          See all available flags from a build file"
+echo "-S                           Generate stage tarball"
 echo "Options:"
 echo "-R=<path>                    Root directory <overwrite \$sysroot>"
 echo "-bf=<path>                   Build file"
@@ -62,6 +63,12 @@ fetch_sources() {
 for src in $*; do 
 	srcargs="$(echo $src | sed "s/::/ /g")"
 	parse_srcargs $srcargs
+	case "$localname" in
+		http* | ftp* ) 
+			remotetype=file;
+			remoteurl="$localname";
+			localname="$(basename $localname)";;
+	esac
 	if ! test -f "$localname"; then
 		if test -z $remotetype; then 
 			die "$localname not found!"
@@ -79,6 +86,7 @@ for src in $*; do
 					git clone $remoteurl $workdir/$localname || die "Failed to fetch source (git commit: $localname)";
 					cd $workdir/$localname
 					git checkout $gitcommit;
+					rm -rf .git/;
 					cd $hanhdir;;
 			esac
 		fi
@@ -164,6 +172,22 @@ if test -n "$*"; then
 		fi
 	done
 fi
+}
+
+gen_stage() {
+stagedir="${1}"
+name="${2}"
+ver="${3}"
+desc="${4}"
+
+echo "name=\"$name\"" >> $stagedir/stage-info
+echo "ver=\"$ver\""   >> $stagedir/stage-info
+echo "desc=\"$desc\"" >> $stagedir/stage-info
+
+cp -r $script $stagedir/script
+
+cd $stagedir/ 
+tar -cjf $name
 }
 
 get_flag() {
@@ -410,6 +434,7 @@ for arg in $*; do
 		-F) action=fetch_pkg;;
 		-g) action=gen_archive;;
 		-gf) action=get_flag;;
+		-S) action=gen_stage;;
 		*) misc="$misc $arg";;
 	esac
 done

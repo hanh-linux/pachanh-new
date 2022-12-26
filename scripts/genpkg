@@ -55,11 +55,11 @@ die() {
 	exit 1
 }
 
-. "$1" 
+. "\$1" 
 
-type "$2" > /dev/null 2>&1 
-if test "$?" == 0; then 
-	$* || die
+type "\$2" > /dev/null 2>&1 
+if test "\$?" == 0; then 
+	\$* || die
 fi	
 EOF
 	install -Dm755 "$hanhdir"/.temp-hook "$pkgdir"/hook
@@ -76,4 +76,4 @@ fi
 
 . "${1}" || echo Cannot get information from build file
 
-eval $2
+eval $2 $misc
