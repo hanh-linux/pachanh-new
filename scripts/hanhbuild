@@ -174,20 +174,12 @@ if test -n "$*"; then
 fi
 }
 
-gen_stage() {
-stagedir="${1}"
-name="${2}"
-ver="${3}"
-desc="${4}"
-
-echo "name=\"$name\"" >> $stagedir/stage-info
-echo "ver=\"$ver\""   >> $stagedir/stage-info
-echo "desc=\"$desc\"" >> $stagedir/stage-info
-
-cp -r $script $stagedir/script
-
-cd $stagedir/ 
-tar -cjf $name
+get_tarball() {
+if test -z "$buildfile"; then
+	buildfile="$(pwd)/buildhanh"
+fi
+. "$buildfile" || die "Cannot get build information from $buildfile"
+echo $name-$ver.hanhpkg.tar.xz
 }
 
 get_flag() {
@@ -208,6 +200,13 @@ if test -n "$binary"; then
 	echo "$tarball" > release
 fi
 }
+
+gen_stage() {
+cd $stagedir/ 
+. stage-info || die "Failed to source stage-info file"
+tar -cjf $name
+}
+
 
 gen_archive() {
 cwd=$(pwd)
@@ -434,6 +433,7 @@ for arg in $*; do
 		-F) action=fetch_pkg;;
 		-g) action=gen_archive;;
 		-gf) action=get_flag;;
+		-gt) action=get_tarball;;
 		-S) action=gen_stage;;
 		*) misc="$misc $arg";;
 	esac
