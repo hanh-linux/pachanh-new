@@ -1,1 +1,1 @@
-eval "$CC $CFLAGS $LDFLAGS -lconfuse -o hanh find.c function.c hanh.c help.c install.c query.c remove.c snapshot.c sync.c" 
+eval "$CC $CFLAGS $LDFLAGS -g -O0 -lconfuse -o hanh find.c function.c hanh.c help.c install.c query.c remove.c snapshot.c sync.c" 

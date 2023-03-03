@@ -11,11 +11,9 @@ void FIND(char packages[], const char *root, char repositories[]) {
 			snprintf(pkgpath, __PATH, "%s/var/lib/pachanh/remote/%s/%s/data", root, repo, pkg); 
 			if ((checkPath(pkgpath, "silent")) == 0) {
 				FILE *data = fopen(pkgpath, "r"); 
-				fseek(data, 0, SEEK_END); 
-				long int size = ftell(data); 
-				fseek(data, 0, SEEK_SET);
+				int size = getSize(data);
 				char dataCon[size]; 
-				dataCon[size] = 0; 
+				snprintf(dataCon, size, ""); 
 				fread(dataCon, size, 1, data); 
 				printf("%s/%s\n", repo, dataCon);
 				fclose(data);

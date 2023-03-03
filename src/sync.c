@@ -17,16 +17,15 @@ int SYNC(char repositories[], const char *root, const char *mirror, const char *
 	while (repo != NULL) {
 		char repoPath[__PATH] = "";
 		snprintf(repoPath, __PATH, "%s/%s", mirror, repo);
+		puts(repoPath); 
 		code = checkPath(repoPath, repo); 
 		checkCode(code); 
 
 		FILE *repoFile = fopen(repoPath, "r");
-		fseek(repoFile, 0, SEEK_END);
-		int size = ftell(repoFile); 
-		fseek(repoFile, 0, SEEK_SET);
+		int size = getSize(repoFile);
+		printf("%d\n", size);
 		char repoCon[size]; 
 		fread(repoCon, size, 1, repoFile);
-		repoCon[size] = 0;
 
 		char *mirBuf = NULL;
 		char *mir = strtok_r(repoCon, "\n", &mirBuf); 

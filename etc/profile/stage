@@ -1,0 +1,13 @@
+#!/hint/sh
+if test -n "$stagemode"; then
+	if test -n "$verbose"; then
+		echo "Enabled stage mode."
+		echo "Export c_include to include stage C headers directory"
+		echo "Export cxx_include to include stage C++ headers directory"
+		echo "EXport libpath to add stage library dir"
+	fi
+
+	sysroot="$installRoot"
+	CFLAGS="--sysroot=\"$sysroot\" -I\"$sysroot/usr/include\" $CFLAGS"
+	CXXFLAGS="--sysroot=\"$sysroot\" -I\"$sysroot/usr/include/c++/$dir \"$CXXFLAGS"
+fi

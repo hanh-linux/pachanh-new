@@ -1,6 +1,4 @@
 #include "hanh.h"
-#include <errno.h>
-#include <dirent.h>
 
 void err(const char *msg) {
 	printf("ERROR: %s\n", msg); 
@@ -73,13 +71,19 @@ int checkDir(const char *obj, const char *msg) {
 		if ((strcmp(msg, "silent")) != 0) {
 			printf("%s not found\n", msg);
 		}
-		code = 1;
+		code = errno;
+	}
+	else if (ENOTDIR == errno) {
+		if ((strcmp(msg, "silent")) != 0) {
+			printf("%s is not a directory", msg);
+		} 
+		code = errno;
 	}
 	else {
 		if ((strcmp(msg, "silent")) != 0) {
 			printf("Failed to open %s: %s", obj, strerror(errno));
 		}
-		code = 1;
+		code = errno;
 	} 
 	return code; 
 }
@@ -123,7 +127,30 @@ int untar(const char *untarPath, const char *file) {
 	int code = system(cmd);
 	if (code != 0) err("Failed to unpack needed file"); 	
 	return code; 
-	}
+}
+
+int keepOldUntar(const char *untarPath, const char *file) {
+	// Like untar(), but keep old file
+	char cmd[__CMD] = ""; 
+	snprintf(cmd, __CMD, "tar -k -C %s -xf %s", untarPath, file);
+	int code = system(cmd);
+	if (code != 0) err("Failed to unpack needed file or file existed");
+	return code; 
+}
+
+int createTar(const char *dir, const char *name) {
+	char cwd[__PATH] = ""; 
+	char cmd[__CMD] = "";
+	int code = 0;
+	getcwd(cwd, __PATH); 
+	snprintf(cmd, __CMD, "tar -cjf %s/%s.tar.xz *", cwd, name);
+
+	chdir(dir);
+	code = system(cmd);
+	chdir(cwd);
+
+	return code; 
+}
 
 int updatePkglist(const char *root, const char *pkg) {
 	// Update package install order or your system will be fcked up 
@@ -135,23 +162,80 @@ int updatePkglist(const char *root, const char *pkg) {
 	code = fprintf(orderfile, "%s;\n", pkg);
 	fclose(orderfile);
 	if (code > 0) { code = 0; } else { code = 1; } 
-	return code;
 	fclose(orderfile); 
+	return code;
 }
 
 int clearTmp(const char *tmpdir) {
 	char cleanCmd[__CMD] = ""; 
-	snprintf(cleanCmd, __CMD, "rm -rf %s", tmpdir);
+	snprintf(cleanCmd, __CMD, "rm -rf %s && rm -rf /tmp/oldfiles", tmpdir);
 	int code = system(cleanCmd);
 
 	return code;
 }
 
-int getSize(const char *fpath) {
-	FILE *file = fopen(fpath, "r");
+int getSize(FILE *file) {
 	fseek(file, 0, SEEK_END);
 	int size = ftell(file); 
-	fseek(file, 0, SEEK_SET); 
+	fseek(file, 0, SEEK_SET);
 	
 	return size;
-} 
+}
+
+int checkDirEmpty(const char *dirpath) {
+	char name[__PATH] = "";
+	int code = 0;
+	struct dirent *pDirent;
+	DIR *dir = opendir(dirpath);
+	if (dir) {
+		while ((pDirent = readdir(dir)) != NULL) {
+			strcpy(name, pDirent->d_name);
+			if  ((strcmp(name, ".")) != 0 && (strcmp(name, "..")) != 0 ) {
+				code = 1;
+				break;
+			}
+		}
+	}
+	else {
+		code = 1;
+	}
+	return code;
+}
+
+int del(const char *path, const int exitIfFail) {
+	int code = checkDir(path, "silent");
+	if (code == 0) {
+		int empty = checkDirEmpty(path); 
+		if (empty == 0) {
+			code = remove(path);
+			if (code != 0) {
+				if (exitIfFail != 0) {
+					printf("ERROR: Failed to remove %s: %s", path, strerror(errno));
+					return errno;
+				}
+			}
+		}
+	} 
+	else if (ENOTDIR == code) {
+		code = remove(path);
+		if (code != 0) {
+			if (exitIfFail != 0) {
+				printf("ERROR: Failed to remove %s: %s", path, strerror(errno));
+				return errno;
+			}
+		}
+	}
+	else if (ENOENT == code) {}
+	else {
+		printf("ERROR: Failed to access %s: %s", path, strerror(errno));
+		return errno;	
+	}
+	return 0; 
+}
+
+char* getName() {
+	static char name[__ARG];
+	FILE *inp = popen("hanhbuild -gi", "r");
+	fgets(name, __ARG, inp); 
+	return name;
+}

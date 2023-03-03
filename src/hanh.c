@@ -14,6 +14,8 @@ int main(int argc, char **argv)
 	int action 	= 0;
 	int nodeps	= 0; // enable checking dependencies by default
 	int exitcode	= 0;
+	int noinstall   = 0;
+	int ignore      = 0;
 	int opt            ;
 
 	// General variables will be used from command-line 
@@ -22,7 +24,7 @@ int main(int argc, char **argv)
 	char buildtype[__ARG]      = ""  ; 
 	char installtype[__ARG]    = ""  ;
 	char source[__ARG]         = ""  ;
-	char buildlist[__PATH]     = ""  ;
+	char builddir[__PATH]      = ""  ;
 	char installRoot[__PATH]   = ""  ;
 	char *env_optarg                 ;
 
@@ -38,7 +40,7 @@ int main(int argc, char **argv)
 		{"sync",       0, 0, 's'}, 
 		{"find",       0, 0, 'f'}, 
 		{"query",      0, 0, 'q'},
-		{"snapshot",   0, 0, 'S'}, 
+		{"snapshot",   0, 0, 'S'},
 		{"root",       1, 0, 'R'}, 
 		{"mirror",     1, 0, 'm'}, 
 		{"download",   1, 0, 'd'},
@@ -46,11 +48,12 @@ int main(int argc, char **argv)
 		{"infotype",   1, 0, 't'},
 		{"instype",    1, 0, 'I'},
 		{"buildtype",  1, 0, 'b'},
-		{"where",      1, 0, 'w'},
+		{"noinstall",  0, 0, 'n'},
 		{"help",       0, 0, 'h'},
 		{"version",    0, 0, 'v'},
-		{"buildlist",  1, 0, 'B'},
+		{"builddir",   1, 0, 'B'},
 		{"stageroot",  1, 0, 'T'},
+		{"ignore",     0, 0, 'g'},
 		{NULL, 0, NULL, 0}
 	};
 	
@@ -66,7 +69,7 @@ int main(int argc, char **argv)
 	cfg_parse(cfg, "CONFDIR/hanh.conf");
 	
 	/* Working with command-line argument. Here we use POSIX getopt() function. */
-	while ((opt = getopt_long(argc, argv, "irqsfShvR:d:m:t:DI:b:B:T:", long_opts, NULL)) != -1){
+	while ((opt = getopt_long(argc, argv, "irqsfShvR:d:m:t:DI:b:B:T:nIg", long_opts, NULL)) != -1){
 		switch (opt) {
 			
 			case 'h': 
@@ -104,6 +107,14 @@ int main(int argc, char **argv)
 			case 'D': 
 			nodeps=1;
 			break;
+
+			case 'n': 
+			noinstall=1; 
+			break;
+
+			case 'g': 
+			ignore=1;
+			break;
 						
 			case 'R': 
 			strcpy(sysroot, optarg);
@@ -126,7 +137,7 @@ int main(int argc, char **argv)
 			break;
 			
 			case 'B': 
-			strcpy(buildlist, optarg);
+			strcpy(builddir, optarg);
 			break;
 
 			case 'I': 
@@ -154,20 +165,54 @@ int main(int argc, char **argv)
 		}
 		
 	// Set some default value for empty variables
-	if (installtype[0] == '\0')
-		strcpy(installtype, "packages"); 
-	if (buildtype[0] == '\0')
-		strcpy(buildtype, "system");
-	if (source[0] == '\0')
-		strcpy(source, "remote");
-	if (buildlist[0] == '\0')
-		snprintf(buildlist, __PATH, "%s/var/lib/pachanh/system/pkgorder", sysroot);
-	if (installRoot[0] == '\0') 
-		strcpy(installRoot, sysroot);
+	if (action == 1) {
+		if (installtype[0] == '\0')
+			strcpy(installtype, "packages"); 
+		env_optarg = getenv("optarg");
+		if (env_optarg == NULL)
+			env_optarg = " ";
 
-	env_optarg = getenv("optarg");
-	if (env_optarg == NULL)
-		env_optarg = " ";
+	}
+	else if (action == 3) {
+		if (type[0] == '\0')
+			strcpy(type, "info,filelist");
+	}
+	else if (action == 6) {
+		if (buildtype[0] == '\0') {
+			strcpy(buildtype, "system");
+		} 
+		else {
+			if ((strcmp(buildtype, "system")) != 0 && (strcmp(buildtype, "stage")) != 0) 
+				die("Invalid stage mode", 1);
+		}
+	
+		if (builddir[0] == '\0') {
+			if ((strcmp(buildtype, "stage")) == 0) {
+				die("Stage mode set but no build directory set", 1);
+			}
+			else if ((strcmp(buildtype, "system")) == 0){ 
+				time_t t_var = time(NULL);
+				struct tm* tm = localtime(&t_var); 
+	
+				snprintf(builddir, __PATH, "%s/usr/cache/%d-%d-%d/", sysroot, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+			}
+		}
+
+		if (installRoot[0] == '\0') {
+			if ((strcmp(buildtype, "system")) == 0) {
+				strcpy(installRoot, sysroot);
+			}
+			else if ((strcmp(buildtype, "stage")) == 0) {
+				snprintf(installRoot, __PATH, "%s/sysroot", builddir);
+			}
+		}
+
+		env_optarg = getenv("optarg");
+		if (env_optarg == NULL)
+			env_optarg = " ";
+		exitcode = checkDir(builddir, "Build directory"); 
+		checkCode(exitcode);
+	}
 
 	if (verbose != 0) {
 		printf("[DEBUG] Variables: \n");
@@ -182,10 +227,10 @@ int main(int argc, char **argv)
 	/*Check for command line error*/	
 	exitcode = checkEmpty(download, "Download command");
 	checkCode(exitcode);
-	exitcode = checkPath(sysroot, "Root");
+	exitcode = checkDir(sysroot, "Root");
 	checkCode(exitcode);
-	exitcode = checkPath(mirror, "Mirror directory");
-	checkCode(exitcode); 
+	exitcode = checkDir(mirror, "Mirror directory");
+	checkCode(exitcode);
 	switch(action) {
 		
 		case 0: 
@@ -194,7 +239,7 @@ int main(int argc, char **argv)
 		break;
 	
 		case 1:
-		exitcode = INSTALL(packages, env_optarg, installtype, installRoot, sysroot, mirror, download, repo, nodeps, verbose);
+		exitcode = INSTALL(packages, env_optarg, installtype, installRoot, sysroot, mirror, download, repo, nodeps, 0, ignore, verbose);
 		checkCode(exitcode);
 		break;
 
@@ -219,7 +264,7 @@ int main(int argc, char **argv)
 		break;
 
 		case 6:
-		exitcode = SNAPSHOT(sysroot);
+		exitcode = SNAPSHOT(installRoot, builddir, env_optarg, buildtype, noinstall, nodeps, sysroot, ignore, verbose);
 		checkCode(exitcode);	
 		break;
 		}		

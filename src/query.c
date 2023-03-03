@@ -4,13 +4,15 @@ int QUERY(char packages[], const char *root, const char *filetype) {
 	if (packages[0] == '\0') {
 		char pkgorderpath[__PATH] = ""; 
 		snprintf(pkgorderpath, __PATH, "%s/var/lib/pachanh/system/pkgorder", root);
-		FILE *pkgorder = fopen(pkgorderpath, "r"); 
-		fseek(pkgorder, 0, SEEK_END); 
-		int size = ftell(pkgorder);
-		fseek(pkgorder, 0, SEEK_SET); 
+		int code = checkPath(pkgorderpath, "Package install order"); 
+		checkCode(code);
+		FILE *pkgorder = fopen(pkgorderpath, "r");
+		int size = getSize(pkgorder);
+	
 		char pkgorderCon[size];
+		snprintf(pkgorderCon, size, "");
 		fread(pkgorderCon, size, 1, pkgorder); 
-		pkgorderCon[size] = 0;
+		
 		printf("%s\n", pkgorderCon); 
 		fclose(pkgorder); 
 		return 0; 
@@ -26,7 +28,6 @@ int QUERY(char packages[], const char *root, const char *filetype) {
 		}
 		char ftype[__ARG] = ""; 
 		strcpy(ftype, filetype);
-		if (ftype[0] == '\0') strcpy(ftype, "info,filelist");
 
 		char *ftBuf = NULL; 
 		char *file  = strtok_r(ftype, ",", &ftBuf); 
@@ -66,16 +67,15 @@ int QUERY(char packages[], const char *root, const char *filetype) {
 				printf("License: %s\n", license); 
 				printf("Dependencies: %s\n", depends);
 				printf("Contain: %s\n", contain); 
-				printf("Dependants: %s\n", dependants); 
+				printf("Dependants: %s\n", dependants);
+				cfg_free(cfg);
 			} 
 			else if ((strcmp(file, "filelist")) == 0){ 
 				char flpath[__PATH] = "";
 				snprintf(flpath, __PATH, "%s/var/lib/pachanh/system/%s/filelist", root, pkg);
 
 				FILE *filelist = fopen(flpath, "r"); 
-				fseek(filelist, 0, SEEK_END); 
-				int size = ftell(filelist); 
-				fseek(filelist, 0, SEEK_SET); 
+				int size = getSize(filelist); 
 				char flcon[size];
 				fread(flcon, size, 1, filelist); 
 				flcon[size] = 0; 

@@ -16,6 +16,7 @@ void help() {
 	printf("-R [--root        ] <path>                Change root directory\n"); 
 	printf("-d [--download    ] <command>             Use another download command\n"); 
 	printf("-m [--mirror      ] <path>                Use specified mirror directory\n");
+	printf("-g [--ignore      ]                       Ignore acceptable errors and overwritting process\n");
 	printf("Options: query only\n");
 	printf("-t [--infotype    ] [info,filelist]       Specify file(s) to query\n");
 	printf("Options: install only\n");
@@ -23,8 +24,8 @@ void help() {
 	printf("-I [--instype     ] [packages/stage]      Modify install type\n");
 	printf("-T [--stageroot   ] <path>                Specify where to install stage tarball\n");
 	printf("Options: snapshot only\n");
-	printf("-b [--buildtype   ] [system/stage]        Modify snapshot buildtype\n");
-	printf("-w [--where       ] [remote/local]        Specify where to build\n"); 
+	printf("-n [--noinstall   ]                       Disable installing package after built\n");
+	printf("-b [--buildtype   ] [system/stage]        Modify snapshot buildtype\n"); 
 	printf("-B [--buildlist   ] <path>                Build package list\n");
 	exit(0);
 	}

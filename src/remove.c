@@ -1,13 +1,18 @@
 #include "hanh.h"
 
-// TODO: Remove all files in package
 // TODO: Support removing dependencies
+// Users have to manually delete package(s) old configuration file(s), as these files are for backup
+int REMOVE(char packages[], const char *root, const char *mode, const long int verbose, const int ignore) {
+	int exitFail;
+	if (ignore != 0) 
+		exitFail = 0; 
+	else 
+		exitFail = 1;
 
-// Users have to manually delete package(s) old configuration file(s)
-int REMOVE(char packages[], const char *root, const char *mode, const long int verbose, const int exitFail) {
 	char *buf = NULL; 
 	char *pkg = strtok_r(packages, " ", &buf); 
 	int code  = 0;
+	int rmCode = 0;
 
 	while (pkg != NULL) {
 		char movehook[__CMD]  = ""; 
@@ -87,8 +92,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			while (file != NULL) {
 				char fullfilepath[__PATH] = ""; 
 				snprintf(fullfilepath, __PATH, "%s/%s", root, file);
-				int codeDir = checkDir(fullfilepath, "silent"); 
-				int rmCode  = 0; 
+				int codeDir = checkDir(fullfilepath, "silent"); 	
 
 				if (codeDir == 0) {
 					if (empty != 0) { strcat(dirinpkg, fullfilepath); } else { strcpy(dirinpkg, fullfilepath); }
@@ -96,9 +100,20 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 					empty = 1; 
 				} 
 				else {
-					rmCode = remove(fullfilepath);
+					rmCode = del(fullfilepath, exitFail);
 					// should we treat this as error? 
-					if (rmCode != 0) printf("WARNING: failed to remove %s\n", fullfilepath); 
+					if (rmCode != 0) {
+						if (errno != ENOENT) {
+							if (exitFail == 0) {
+								printf("WARNING: Failed to remove %s: %s\n", fullfilepath, strerror(errno));
+							}
+							else {
+								printf("ERROR: Failed to remove %s: %s\n", fullfilepath, strerror(errno));
+								exit(errno); 
+							}
+							
+						}
+					}	
 				}
 
 			file = strtok_r(NULL, "\n", &fileBuf);
@@ -108,9 +123,20 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			char *dirBuf = NULL; 
 			char *dir    = strtok_r(dirinpkg, "\n", & dirBuf); 
 			while (dir != NULL) {
-				// should we treat this as error? 
-				rmdir(dir);	
-				dir = strtok_r(NULL, "\n", &dirBuf); 
+				// should we treat this as error?
+				rmCode = del(dir, exitFail);
+				if (rmCode != 0) {
+					if (errno != ENOENT && errno != ENOTEMPTY) {
+						if (exitFail == 0) {
+							printf("WARNING: Failed to remove %s: %s\n", dir, strerror(errno));
+						}
+						else {
+							printf("ERROR: Failed to remove %s: %s\n", dir, strerror(errno));
+							exit(errno); 
+						}	
+					}
+					dir = strtok_r(NULL, "\n", &dirBuf);
+				}	
 			}
 
 			if (verbose != 0) debug("Removing package contain");

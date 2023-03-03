@@ -28,7 +28,7 @@ echo "depends=\"$depends\"" >> "$info"
 echo "contain=\"$contain\"" >> "$info"
 echo "dependants=\"\"" >> "$info"
 
-find * | tee "$filelist" > /dev/null 2>&1
+find * | awk '{ print length(), $0 | "sort -n -r" }' | cut -d " " -f2 | tee "$filelist" > /dev/null 2>&1
 
 echo "name=\"$name\"" >> "$header"
 echo "version=\"$ver\"" >> "$header"

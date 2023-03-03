@@ -5,7 +5,8 @@ system=/var/lib/pachanh/system
 hanhdir=$(pwd)
 
 print_help() {
-echo "hanhbuild - Hanh Linux packages builder"
+echo "hanhbuild - Hanh Linux tool for generating packages stuff"
+echo ""
 echo "Usage: hanhbuild [Action] [Options]"
 echo "Action:"
 echo "-h                           Print this message"
@@ -14,7 +15,7 @@ echo "-g                           Create database archive of all packages in cu
 echo "-F                           Fetch package(s) build file(s)"
 echo "-b                           Build packages"
 echo "-gf                          See all available flags from a build file"
-echo "-S                           Generate stage tarball"
+echo "-gn                          Get package name in format \$name-\$ver.hanhpkg.tar.xz"
 echo "Options:"
 echo "-R=<path>                    Root directory <overwrite \$sysroot>"
 echo "-bf=<path>                   Build file"
@@ -28,6 +29,8 @@ echo "-t=[unpack,compile,mkpkg]    Build tasks"
 echo "-i                           Install packages after build (skip compile if package found)"
 echo "-s                           Compare system package version"
 echo "-I                           Ignore error (if package not found)"
+echo "-S                           Enable stage tarball mode"
+echo "-ir=<path>                   Path to stage root directory"
 echo "Options <for database only>:"
 echo "-r=<name>                    Repository name"
 echo "-H=<path>                    Hook script"
@@ -69,7 +72,7 @@ for src in $*; do
 			remoteurl="$localname";
 			localname="$(basename $localname)";;
 	esac
-	if ! test -f "$localname"; then
+	if ! test -f "$localname" && ! test -d "$localname"; then
 		if test -z $remotetype; then 
 			die "$localname not found!"
 		else
@@ -78,7 +81,7 @@ for src in $*; do
 			fi
 			case $remotetype in
 				file ) 
-					fetch $hanhdir/$localname $remoteurl || die "Failed to fetch source (file :$localname)";;
+					fetch $hanhdir/$localname $remoteurl || die "Failed to fetch source (file: $localname)";;
 				git  ) 
 					git clone $remoteurl $workdir/$localname || die "Failed to fetch source (git: $localname)";
 					rm -rf $hanhdir/$localname/.git;;
@@ -110,7 +113,7 @@ fi
 
 for x in $*; do
 	unset fetched found
-	if ! test -d $cwd/$x; then 
+	if ! test -f $cwd/$x/buildhanh; then 
 		for y in $repo; do
 			if test -d $sysroot/$remote/$y/$x; then
 				found=1
@@ -118,7 +121,7 @@ for x in $*; do
 						fetch buildhanh $z/$x/buildhanh
 						if test -f "$cwd/buildhanh"; then
 							fetched=1
-							mkdir $cwd/$x
+							mkdir -p $cwd/$x
 							mv buildhanh $cwd/$x
 							cd $cwd/$x
 							. "$(pwd)/buildhanh"
@@ -132,6 +135,7 @@ for x in $*; do
 			fi
 		done
 	else
+		echo Found local build file! Remove it to fetch from remote.
 		found=1
 	fi
 	if test -z $found; then 
@@ -156,17 +160,20 @@ fi
 }
 
 check_deps() {
+if test -z "$buildroot"; then
+	buildroot="$sysroot"
+fi
+
 if test -n "$*"; then
 	for dep in $*; do
-		if ! test -d $sysroot/$system/$dep; then
+		if ! test -d $buildroot/$system/$dep; then
 			if test -z "$builddeps"; then
 				die "Dependency $dep not found"
 			else
 				cd "$hanhdir"/deps
-				hanhbuild -F "$dep" || die 
+				hanhbuild -F "$dep" || die "Dependencies not found in remote"
 				cd "$dep"
-				hanhbuild -b -bd || die "Failed to build dependencies"
-				hanh -i $dep*.hanhpkg.tar.xz || die "Failed to install dependencies"
+				hanhbuild -b -bd -i || die "Failed to build dependencies"
 				cd "$hanhdir"
 			fi
 		fi
@@ -174,21 +181,38 @@ if test -n "$*"; then
 fi
 }
 
-get_tarball() {
-if test -z "$buildfile"; then
-	buildfile="$(pwd)/buildhanh"
+check_mkdeps() {
+if test -n "$*"; then
+	for dep in $*; do
+		if ! test -d $sysroot/$system/$dep; then
+			if test -z "$builddeps"; then
+				die "Dependency $dep not found"
+			else
+				cd "$hanhdir"/deps
+				hanhbuild -F "$dep" || die "Dependencies not found in remote"
+				cd "$dep"
+				hanhbuild -b -bd -i || die "Failed to build dependencies"
+				cd "$hanhdir"
+			fi
+		fi
+	done
 fi
+
+}
+
+get_tarball() {
 . "$buildfile" || die "Cannot get build information from $buildfile"
 echo $name-$ver.hanhpkg.tar.xz
 }
 
 get_flag() {
-if test -z "$buildfile"; then
-	buildfile="$(pwd)/buildhanh"
-fi
 . "$buildfile" || die "Cannot get build information from $buildfile"
 echo "Build flavor are: $buildFlavor"
 echo "Build flags are: $buildFlags"
+}
+
+get_info() {
+echo $name-$ver.hanhpkg.tar.xz
 }
 
 gen_db() {
@@ -200,13 +224,6 @@ if test -n "$binary"; then
 	echo "$tarball" > release
 fi
 }
-
-gen_stage() {
-cd $stagedir/ 
-. stage-info || die "Failed to source stage-info file"
-tar -cjf $name
-}
-
 
 gen_archive() {
 cwd=$(pwd)
@@ -298,11 +315,15 @@ mv $hanhdir/.temp-buildhanh $hanhdir/buildhanh
 }
 
 build() {
-for buildopt in $buildopts; do
-	if ! test -f CONFDIR/hanh.d/profile/$buildopt; then 
-		die "Cannot find specified option ($buildopt)"
+if test -n "$stagemode"; then
+	buildopts="stage $buildopts"
+fi
+
+for bo in $buildopts; do
+	if ! test -f CONFDIR/hanh.d/profile/$bo; then 
+		die "Cannot find specified option ($bo)"
 	else 
-		. CONFDIR/hanh.d/profile/$buildopt || die "Failed to use $buildopt build profile"
+		. CONFDIR/hanh.d/profile/$bo || die "Failed to use $bo build profile"
 	fi
 done
 
@@ -359,7 +380,8 @@ fi
 if test -z "$nodeps"; then	
 	echo "Checking deps..."
 	mkdir -p $hanhdir/deps
-	check_deps $depends $mkdeps  
+	check_deps $depends
+	check_mkdeps $mkdeps
 fi
 
 echo "Checking sources..."
@@ -368,6 +390,9 @@ fetch_sources $sources || die "Failed to get information of sources"
 for func in $task; do 
 	echo "Running function $func"
 	if test "$func" == mkpkg; then 
+		for _t in $mkpkg_task; do
+			$_t || die "Failed to run mkpkg_task" 
+		done
 		GEN=1 \
 		pkgdir=$pkgdir \
 		hanhdir=$hanhdir \
@@ -376,12 +401,7 @@ for func in $task; do
 	else
 		eval $func || die Failed to run function $compile
 	fi
-	taskname="$func"
-	taskname+="_task"
-	eval all_functasks="\$$taskname"
-	for functask in $all_functasks; do 
-		eval $functask || die "Failed to execute in specified build option ($functask)"
-	done
+
 	if test "$func" == "mkpkg"; then 
 		repack=1
 	fi
@@ -411,7 +431,6 @@ unset install_later install
 
 . CONFDIR/hanhbuild.conf || die "Cannot get information from configuration file."
 
-
 for arg in $*; do
 	case $arg in 
 		-h) print_help;;
@@ -422,10 +441,12 @@ for arg in $*; do
 		-i) export install=1;;
 		-s) export syscompare=1;;
 		-bd) export builddeps=1;;
-		-R=*) sysroot="$(echo $arg | cut -d "=" -f 2)";;
-		-bf=*) buildfile="$(echo $arg | cut -d "=" -f 2)";;
-		-t=*) Task="$(echo $arg | cut -d "=" -f 2 | sed 's/,/ /g')";;
-		-fl=*) flag="$(echo $arg | cut -d "=" -f 2)";;
+		-S) export stagemode=1;;
+		-R=*) export sysroot="$(echo $arg | cut -d "=" -f 2)";;
+		-bf=*) export buildfile="$(echo $arg | cut -d "=" -f 2)";;
+		-t=*) export Task="$(echo $arg | cut -d "=" -f 2 | sed 's/,/ /g')";;
+		-fl=*) export flag="$(echo $arg | cut -d "=" -f 2)";;
+		-ir=*) export installRoot=$(echo $arg | cut -d "=" -f 2);;
 		-r=*) export dbrepo="$(echo $arg | cut -d "=" -f 2)";;
 		-H=*) export repohook="$(echo $arg | cut -d "=" -f 2)";;
 		-a*) compile_flags="$compile_flags $arg";;
@@ -434,10 +455,15 @@ for arg in $*; do
 		-g) action=gen_archive;;
 		-gf) action=get_flag;;
 		-gt) action=get_tarball;;
-		-S) action=gen_stage;;
+		-gn) action=get_info;;
 		*) misc="$misc $arg";;
 	esac
 done
+
+if test "$nodeps" == 1 && "$builddeps" == 1; then
+	echo "WARNING: Overwrites build dependencies to no because no dependencies build set"
+	unset builddeps
+fi
 
 if test -z "$buildfile"; then
 	buildfile="$hanhdir/buildhanh"
