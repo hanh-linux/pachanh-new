@@ -73,10 +73,11 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 	fread(buildOrder, size, 1, pkgorder);
 
 	if ((strcmp (mode, "stage")) == 0) {
-		code = checkPath(baseLib, "Pre-built base libraries archive");
-		checkCode(code);
-		code = untar(installRoot, baseLib);
-		checkCode(code);
+		code = checkPath(baseLib, "silent");
+		if (code == 0) {
+			code = untar(installRoot, baseLib);
+			checkCode(code);
+		}
 	}
 
 	char *buf = NULL; 
