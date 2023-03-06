@@ -2,6 +2,6 @@
 if test -z "$static"; then 
   libs="-lconfuse"
 else
-  staticlib="$sysroot/$prefix/lib/libconfuse.a"
+  staticlib="$SYSROOT/$PREFIX/lib/libconfuse.a"
 fi
 eval "$CC $CFLAGS $LDFLAGS $libs -o hanh find.c function.c hanh.c help.c install.c query.c remove.c snapshot.c sync.c $staticlib"
