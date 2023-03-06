@@ -195,6 +195,7 @@ int main(int argc, char **argv)
 				struct tm* tm = localtime(&t_var); 
 	
 				snprintf(builddir, __PATH, "%s/usr/cache/%d-%d-%d/", sysroot, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
+				mkdir(builddir, 0755);
 			}
 		}
 
