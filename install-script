@@ -77,7 +77,6 @@ run install -Dm644 src/hanh.h $DESTDIR/$SYSROOT/$PREFIX/include/hanh.h
 if test -z "$keepcfg"; then
 	run install -Dm644 out/hanh.conf $DESTDIR/$CONFDIR/hanh.conf
 	run install -Dm644 out/hanhbuild.conf $DESTDIR/$CONFDIR/hanhbuild.conf
-fi
 
 for dir in $etcdirs; do
 	run install -dm755 $DESTDIR/$CONFDIR/hanh.d/$dir 
@@ -85,6 +84,7 @@ for dir in $etcdirs; do
 		run install -Dm644 etc/$dir/$f $DESTDIR/$CONFDIR/hanh.d/$dir/$f 
 	done
 done
+fi
 }
 
 CLEAN() {
