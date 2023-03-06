@@ -239,3 +239,21 @@ char* getName() {
 	fgets(name, __ARG, inp); 
 	return name;
 }
+
+int mkdirRecursive(char path[]) {
+	char *buf = NULL;
+	char *tok = strtok_r(path, '/', &buf);
+	char *dirpath = "";
+	int  code = 0;
+	
+	while (tok != NULL) {
+		strcat(dirpath, tok);
+		strcat(dirpath, "/");
+		if ((checkDir(dirpath, "silent")) != 0) {
+			code = mkdir(dirpath, 0755);
+			if (code != 0) printf("ERROR: Failed to create directory: %s\n", dirpath);
+			checkCode(code);
+		}
+		tok = strtok_r(NULL. '/', &buf);
+	}
+}
