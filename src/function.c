@@ -243,7 +243,7 @@ char* getName() {
 int mkdirRecursive(char path[]) {
 	char *buf = NULL;
 	char *tok = strtok_r(path, "/", &buf);
-	char *dirpath = "";
+	char dirpath[__PATH] = "";
 	int  code = 0;
 	
 	while (tok != NULL) {
