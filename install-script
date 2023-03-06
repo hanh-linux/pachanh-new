@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/bin/sh
 HELP() {
 echo "Usage : ./install-script action=[action] (var=val)"
 echo "Actions:"
@@ -19,6 +19,7 @@ echo "CONFDIR=<dir>       Package config directory (default \$SYSROOT/etc)"
 echo "Options:"
 echo "keepcfg=<val>       Keep old config"
 echo "verbose=<val>       Verbose"
+echo "staic=<val>         Link executables statically"
 echo "You can create a .config file so that it will be used for compilation"
 exit
 }
@@ -56,7 +57,7 @@ run sed "s|SYSROOT|$SYSROOT|g" -i out/hanh.conf out/hanhbuild.conf
 run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c out/hanhbuild.conf out/genpkg
 run sed "s|prefix|$PREFIX|g" -i out/hanh.c
 cd out/
-CC=$CC CFLAGS="$CFLAGS" ./build 
+CC=$CC CFLAGS="$CFLAGS" LDFLAGS="$LDFLAGS" static="$static" ./build 
 cd ../ 
 }
 
