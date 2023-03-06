@@ -14,19 +14,25 @@ int main(int argc, char **argv)
 	int action 	= 0;
 	int nodeps	= 0; // enable checking dependencies by default
 	int exitcode	= 0;
+	int dircode	= 0; 
 	int noinstall   = 0;
 	int ignore      = 0;
 	int opt            ;
 
 	// General variables will be used from command-line 
-	char packages[__ARG]       = ""  ;
-	char type[__ARG]           = ""  ;
-	char buildtype[__ARG]      = ""  ; 
-	char installtype[__ARG]    = ""  ;
-	char source[__ARG]         = ""  ;
-	char builddir[__PATH]      = ""  ;
-	char installRoot[__PATH]   = ""  ;
-	char *env_optarg                 ;
+	char packages[__ARG]         = ""  ;
+	char type[__ARG]             = ""  ;
+	char buildtype[__ARG]        = ""  ; 
+	char installtype[__ARG]      = ""  ;
+	char source[__ARG]           = ""  ;
+	char builddir[__PATH]        = ""  ;
+	char installRoot[__PATH]     = ""  ;
+	char localdbpath[__PATH]     = ""  ;
+	char remotedbpath[__PATH]    = ""  ;
+	char pkgtarballspath[__PATH] = ""  ;
+	char stgtarballspath[__PATH] = ""  ; 
+	char stgdbpath[__PATH]       = ""  ; 
+	char *env_optarg                   ;
 
 	static char *sysroot       = NULL;
 	static char *download      = NULL;
@@ -165,6 +171,12 @@ int main(int argc, char **argv)
 		}
 		
 	// Set some default value for empty variables
+	snprintf(localdbpath, __PATH, "%s/%s", sysroot, localdbdir);
+	snprintf(remotedbpath, __PATH, "%s/%s", sysroot, remotedbdir);
+	snprintf(pkgtarballspath, __PATH, "%s/%s", sysroot, pkgtarballs); 
+	snprintf(stgtarballspath, __PATH, "%s/%s", sysroot, stgtarballs); 
+	snprintf(stgdbpath, __PATH, "%s/%s", sysroot, stgdbdir); 
+
 	if (action == 1) {
 		if (installtype[0] == '\0')
 			strcpy(installtype, "packages"); 
@@ -195,7 +207,7 @@ int main(int argc, char **argv)
 				struct tm* tm = localtime(&t_var); 
 	
 				snprintf(builddir, __PATH, "%s/usr/cache/%d-%d-%d/", sysroot, tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday);
-				mkdir(builddir, 0755);
+				mkdirRecursive(builddir, 0755);
 			}
 		}
 
@@ -224,6 +236,7 @@ int main(int argc, char **argv)
 		printf("verbose: %ld\n", verbose);
 		printf("\n"); 
 	}	
+
 		
 	/*Check for command line error*/	
 	exitcode = checkEmpty(download, "Download command");
@@ -232,6 +245,13 @@ int main(int argc, char **argv)
 	checkCode(exitcode);
 	exitcode = checkDir(mirror, "Mirror directory");
 	checkCode(exitcode);
+
+	mkdirRecursive(localdbpath, 0755); 
+	mkdirRecursive(remotedbpath, 0755); 
+	mkdirRecursive(pkgtarballspath, 0755);
+	mkdirRecursive(stgtarballspath, 0755); 
+	mkdirRecursive(stgdbpath, 0755);
+
 	switch(action) {
 		
 		case 0: 

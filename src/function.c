@@ -240,7 +240,7 @@ char* getName() {
 	return name;
 }
 
-int mkdirRecursive(char path[]) {
+int mkdirRecursive(char path[], int perm) {
 	char *buf = NULL;
 	char *tok = strtok_r(path, "/", &buf);
 	char dirpath[__PATH] = "";
@@ -250,7 +250,7 @@ int mkdirRecursive(char path[]) {
 		strcat(dirpath, tok);
 		strcat(dirpath, "/");
 		if ((checkDir(dirpath, "silent")) != 0) {
-			code = mkdir(dirpath, 0755);
+			code = mkdir(dirpath, perm);
 			if (code != 0) printf("ERROR: Failed to create directory: %s\n", dirpath);
 			checkCode(code);
 		}

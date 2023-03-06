@@ -461,7 +461,7 @@ for arg in $*; do
 	esac
 done
 
-if test "$nodeps" == 1 && "$builddeps" == 1; then
+if test "$nodeps" == 1; then
 	echo "WARNING: Overwrites build dependencies to no because no dependencies build set"
 	unset builddeps
 fi

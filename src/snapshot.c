@@ -43,7 +43,7 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 		snprintf(parentPkgdir, __PATH, "%s/packages", buildDir);
 		snprintf(pkgdir, __PATH, "%s/packages/packages/", buildDir);
 		snprintf(scriptPath, __PATH, "%s/script", buildDir);
-		snprintf(baseLib, __PATH, "%s/baselib.tar.gz", buildDir);
+		snprintf(baseLib, __PATH, "%s/baselib.tar.xz", buildDir);
 		snprintf(arg, __ARG, "-S -bd -ir=\"%s\"", installRoot);
 
 		mkdir(parentPkgdir, 0755); 

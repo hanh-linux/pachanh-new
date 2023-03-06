@@ -15,8 +15,11 @@
 #define __ARG  1024 
 #define __CMD  512
 
-#define mode_package 1
-#define mode_stage 2
+#define localdbdir "/var/lib/pachanh/system/"
+#define remotedbdir "/var/lib/pachanh/remote/"
+#define pkgtarballs "/var/cache/pachanh/tarballs/packages/"
+#define stgtarballs "/var/cache/pachanh/tarballs/stage/"
+#define stgdbdir "/var/lib/pachanh/remote/stage/"
 
 void err(const char *msg);
 void die(const char *msg, const int code); 
@@ -38,6 +41,7 @@ int getSize(FILE *file);
 int checkDirEmpty(const char *dirpath);
 int del(const char *path, const int exitIfFail);
 char* getName();
+int mkdirRecursive(char path[], int perm);
 
 int LOCALINSTALL(char packages[], const char *root, const int nodepends, const int snapshot, const int ignore, const long int verbose);
 
