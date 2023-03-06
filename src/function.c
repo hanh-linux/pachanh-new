@@ -256,4 +256,5 @@ int mkdirRecursive(char path[]) {
 		}
 		tok = strtok_r(NULL, "/", &buf);
 	}
+	return code;
 }
