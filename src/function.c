@@ -166,12 +166,10 @@ int updatePkglist(const char *root, const char *pkg) {
 	return code;
 }
 
-int clearTmp(const char *tmpdir) {
+void clearTmp(const char *tmpdir) {
 	char cleanCmd[__CMD] = ""; 
-	snprintf(cleanCmd, __CMD, "rm -rf %s && rm -rf /tmp/oldfiles", tmpdir);
-	int code = system(cleanCmd);
-
-	return code;
+	snprintf(cleanCmd, __CMD, "rm -rf %s", tmpdir);
+	system(cleanCmd);
 }
 
 int getSize(FILE *file) {
@@ -236,8 +234,9 @@ int del(const char *path, const int exitIfFail) {
 char* getName() {
 	static char name[__ARG];
 	FILE *inp = popen("hanhbuild -gi", "r");
-	fgets(name, __ARG, inp); 
-	return name;
+	fgets(name, __ARG, inp);
+	char *tok = strtok(name, "\n");
+	return tok;
 }
 
 int mkdirRecursive(char path[], int perm) {

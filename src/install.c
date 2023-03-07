@@ -110,12 +110,12 @@ void checkConfig(const char *root, char config[]) {
 		char configFullPath[__PATH] = "";
 		snprintf(configFullPath, __PATH, "%s/%s", root, cfgfile);
 		if ((checkFile(configFullPath, "silent")) != 0) {	
-			char oldFile[__PATH] = "";
-			char newFile[__PATH] = ""; 
-			snprintf(oldFile, __PATH, "%s/%s", root, cfgfile);
-			snprintf(newFile, __PATH, "%s.newfile", oldFile);
-			code = rename(oldFile, newFile); 
-			if (code != 0) printf("WARNING: failed to move %s\n, please manually create it.", cfgfile);	
+			// rename() will fail to execute if package file is installed in a 
+			// separate partition, better use system `mv`
+			char mvcmd[__CMD] = ""; 
+			snprintf(mvcmd, __CMD, "mv %s/%s.newfile %s/%s", root, cfgfile, root, cfgfile);
+			code = system(mvcmd);
+			if (code != 0) printf("WARNING: failed to move %s\n", cfgfile);		
 		}
 
 		cfgfile = strtok_r(NULL, " ", &confBuf);
@@ -238,14 +238,8 @@ int LOCALINSTALL(char packages[], const char *root, const int nodepends, const i
 		}
 
 		printf("Installing %s\n", name);
-		if (ignore != 0) {
-			code = keepOldUntar(root, pkg);
-			checkCode(code); 
-		}
-		else {
-			code = untar(root, pkg);
-			checkCode(code);	
-		}
+		code = untar(root, pkg);
+		checkCode(code);	
 
 		printf("Finishing %s\n", name);
 		if (nodepends == 0) { 
@@ -268,7 +262,7 @@ int LOCALINSTALL(char packages[], const char *root, const int nodepends, const i
 			}
 		}
 		if (installCode == 0) {
-			if (snapshot != 0) {
+			if (snapshot == 0) {
 				if (verbose != 0) debug("Removing old files");
 				removeOld(root, tmp);
 			}
@@ -276,16 +270,15 @@ int LOCALINSTALL(char packages[], const char *root, const int nodepends, const i
 		if (verbose != 0) debug("Cleaning up");
 		code = remove(rhead); 
 		checkCode(code);
-		code = remove(Hook); 
-		checkCode(code);
-		code = clearTmp(tmp); 
-		checkCode(code);
+		remove(Hook); 
+		if (snapshot == 0) {
+			clearTmp(tmp); 
+		}
 		if (installCode != 0) {
 			if(verbose != 0) debug("New package installed! Updating package list");
 			code = updatePkglist(root, name);
 			checkCode(code); 
-		}
-		cfg_free(cfg);		
+		}		
 		  		
 		pkg = strtok_r(NULL, " ", &pkgBuf); 
 	}
@@ -470,7 +463,8 @@ int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot
 			strcpy(installDir, installRoot); 		
 		}
 		else if((strcmp(sPath, "cache")) == 0) {
-			snprintf(installDir, __PATH, "%s/var/cache/pachanh/stage/%s", installRoot, sName); 
+			snprintf(installDir, __PATH, "%s/var/cache/pachanh/stage/%s", installRoot, sName);
+			mkdirRecursive(installDir, 0755);
 		}
 
 		code = untar(installDir, stageFile);
@@ -478,7 +472,7 @@ int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot
 
 		// Trigger the stage script if it is presented
 		snprintf(scriptPath, __PATH, "%s/script", installDir); 
-		snprintf(runScript, __PATH, "%s", scriptPath);
+		snprintf(runScript, __PATH, "root=\"%s\" %s", installRoot, scriptPath);
 		if ((checkFile(scriptPath, "silent")) == 0) {
 			if (verbose != 0) debug("Triggering script");
 			code = system(runScript);
@@ -487,6 +481,8 @@ int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot
 		printf("%s stage tarball installed successfully!\n", sName);
 		int removeCode = remove(stageCfg); 
 		if (removeCode != 0) printf("WARNING: failed to remove %s stage information file\n", sName);
+		removeCode = remove(scriptPath); 
+		if (removeCode != 0) printf("WARNING: failed to remove %s stage script file\n", sName);
 		stageFile = strtok_r(NULL, " ", &stageBuf);
 	}
 	return code;

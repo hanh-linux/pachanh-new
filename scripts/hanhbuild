@@ -216,6 +216,7 @@ echo "Build flags are: $buildFlags"
 }
 
 get_info() {
+. "$buildfile" || die "Cannot get information from $buildfile"
 echo $name-$ver.hanhpkg.tar.xz
 }
 
@@ -401,6 +402,7 @@ for func in $task; do
 		workdir=$workdir \
 		fakeroot genpkg "$buildfile" installpkg || die "Failed to install package"
 		for _t in $mkpkg_task; do
+			echo Running build options $_t
 			$_t || die "Failed to run mkpkg_task" 
 		done
 	else

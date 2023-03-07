@@ -36,7 +36,7 @@ int keepOldUntar(const char *untarPath, const char *file);
 int untar(const char *untarPath, const char *file); 
 int createTar(const char *dir, const char *name);
 int updatePkglist(const char *root, const char *pkg);
-int clearTmp(const char *tmpdir);
+void clearTmp(const char *tmpdir);
 int getSize(FILE *file);
 int checkDirEmpty(const char *dirpath);
 int del(const char *path, const int exitIfFail);

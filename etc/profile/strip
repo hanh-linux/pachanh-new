@@ -8,7 +8,7 @@ static_opts="--strip-debug"
 mkpkg_task="$mkpkg_task strip_all"
 
 strip_all() {
-find "$pkgdir" | xargs file | grep "executable" | grep ELF | cut -f 1 -d ":" | xargs "$STRIP" --strip-all 2>/dev/null
-find "$pkgdir" | xargs file | grep "shared object" | grep ELF | cut -f 1 -d ":" | xargs "$STRIP" --strip-unneeded 2>/dev/null
-find "$pkgdir" | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs "$STRIP" --strip-debug 2>/dev/null
+find "$pkgdir" | xargs file | grep "executable" | grep ELF | cut -f 1 -d ":" | xargs "$STRIP" --strip-all 2>/dev/null || true
+find "$pkgdir" | xargs file | grep "shared object" | grep ELF | cut -f 1 -d ":" | xargs "$STRIP" --strip-unneeded 2>/dev/null || true
+find "$pkgdir" | xargs file | grep "current ar archive" | cut -f 1 -d : | xargs "$STRIP" --strip-debug 2>/dev/null || true
 }

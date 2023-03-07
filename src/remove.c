@@ -188,9 +188,8 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			}
 
 			if (verbose != 0) debug("Cleaning up");
-			code = clearTmp(tmp); 
-			checkCode(code);
-		}
+			clearTmp(tmp); 
+			}
 		else {
 			if (exitFail != 0) {
 				printf("ERROR: %s not installed\n", pkg);
