@@ -26,7 +26,7 @@ void help() {
 	printf("Options: snapshot only\n");
 	printf("-n [--noinstall   ]                       Disable installing package after built\n");
 	printf("-b [--buildtype   ] [system/stage]        Modify snapshot buildtype\n"); 
-	printf("-B [--buildlist   ] <path>                Build package list\n");
+	printf("-B [--builddir    ] <path>                Packages build directory\n");
 	printf("-T [--stageroot   ] <path>                Directory to install stage packages for building\n");
 	exit(0);
 	}
