@@ -1,8 +1,10 @@
 #!/bin/sh
 version=2.0
-remote=/var/lib/pachanh/remote
-system=/var/lib/pachanh/system
-hanhdir=$(pwd)
+remote="/var/lib/pachanh/remote"
+system="/var/lib/pachanh/system"
+hanhdir="$(pwd)"
+workdir="$hanhdir/work"
+pkgdir="$hanhdir/pkg"
 
 print_help() {
 echo "hanhbuild - Hanh Linux tool for generating packages stuff"
@@ -69,7 +71,7 @@ for src in $*; do
 	parse_srcargs $srcargs
 	case "$localname" in
 		http* | ftp* ) 
-			remotetype=file;
+			remotetype="file";
 			remoteurl="$localname";
 			localname="$(basename $localname)";;
 	esac
@@ -112,6 +114,7 @@ if test -z "$repo"; then
 	die "Empty repo"
 fi
 
+echo $cwd
 for x in $*; do
 	unset fetched found
 	if ! test -f $cwd/$x/buildhanh; then 
@@ -431,6 +434,7 @@ unset install_later install
 }
 
 . CONFDIR/hanhbuild.conf || die "Cannot get information from configuration file."
+downloader="$download"
 
 for arg in $*; do
 	case $arg in 
@@ -454,6 +458,7 @@ for arg in $*; do
 		-b) action=build;;
 		-F) action=fetch_pkg;;
 		-g) action=gen_archive;;
+		-gi) action=get_info;;
 		-gf) action=get_flag;;
 		-gt) action=get_tarball;;
 		-gn) action=get_info;;

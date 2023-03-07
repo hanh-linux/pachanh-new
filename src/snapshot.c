@@ -17,6 +17,7 @@ int cpInfo(const char *path, const char *file) {
 
 int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_optarg, const char *mode, const int noinstall, const int nodepends, const char *root, const int ignore, const int verbose) {
 	char cwd[__PATH]          = "";
+	char c[__PATH]            = "";
 	char pkgorderPath[__PATH] = "";
 	char infoPath[__PATH]     = ""; 
 	char scriptPath[__PATH]   = "";
@@ -25,6 +26,7 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 	char fetchCmd[__CMD]      = "";
 	char buildCmd[__CMD]      = ""; 
 	char baseLib[__PATH]      = "";
+	char stageMode[__ARG]     = "";
 	char arg[__ARG]           = "";
 	char *tarname             = "";
 	char newTar[__PATH]       = "";
@@ -45,9 +47,9 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 		snprintf(scriptPath, __PATH, "%s/script", buildDir);
 		snprintf(baseLib, __PATH, "%s/baselib.tar.xz", buildDir);
 		snprintf(arg, __ARG, "-S -bd -ir=\"%s\"", installRoot);
-
-		mkdir(parentPkgdir, 0755); 
-		mkdir(pkgdir, 0755);
+		strcpy(stageMode, "stagemode=y");
+ 
+		mkdirRecursive(pkgdir, 0755);
 	}
 
 	char *name = NULL; 
@@ -80,18 +82,22 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 		}
 	}
 
+	chdir(buildDir); 
+	getcwd(c, __PATH); 
+	puts(c);
 	char *buf = NULL; 
 	char *pkg = strtok_r(buildOrder, ";\n", &buf);
 	while (pkg != NULL) {
-		tarname = getName(); 
 		snprintf(fetchCmd, __CMD, "hanhbuild -F %s", pkg);
-		snprintf(buildCmd, __CMD, "buildroot=\"%s\" hanhbuild -b %s %s", installRoot, arg, env_optarg);
+		snprintf(buildCmd, __CMD, "buildroot=\"%s\" %s hanhbuild -b %s %s", installRoot, stageMode, arg, env_optarg);
 		snprintf(newTar,   __CMD, "%s/%s", pkgdir, tarname);
 
-		chdir(pkg);
 		code = system(fetchCmd); 
 		checkCode(code); 
+		chdir(pkg);
 		code = system(buildCmd);
+		checkCode(code); 
+		tarname = getName();
 		code = LOCALINSTALL(tarname, installRoot, nodepends, 1, ignore, verbose);
 		checkCode(code);
 
