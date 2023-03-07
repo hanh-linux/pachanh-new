@@ -394,20 +394,17 @@ fetch_sources $sources || die "Failed to get information of sources"
 for func in $task; do 
 	echo "Running function $func"
 	if test "$func" == mkpkg; then 
-		for _t in $mkpkg_task; do
-			$_t || die "Failed to run mkpkg_task" 
-		done
+		repack=1
 		GEN=1 \
 		pkgdir=$pkgdir \
 		hanhdir=$hanhdir \
 		workdir=$workdir \
 		fakeroot genpkg "$buildfile" installpkg || die "Failed to install package"
+		for _t in $mkpkg_task; do
+			$_t || die "Failed to run mkpkg_task" 
+		done
 	else
 		eval $func || die Failed to run function $compile
-	fi
-
-	if test "$func" == "mkpkg"; then 
-		repack=1
 	fi
 done
 
