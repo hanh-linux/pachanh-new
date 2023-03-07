@@ -9,7 +9,9 @@ int SYNC(char repositories[], const char *root, const char *mirror, const char *
 
 	getcwd(cwd, __PATH); 
 	snprintf(remotePath, __PATH, "%s/var/lib/pachanh/remote", root);
-	chdir(remotePath);
+	code = chdir(remotePath);
+	if (code != 0) die("Remote dbdir not found!", 1);
+	checkCode(code);
 	printf("Cleaning old database...\n");
 	code = system("rm -rf *");
 	checkCode(code);

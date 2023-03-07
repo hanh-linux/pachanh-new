@@ -175,7 +175,7 @@ int main(int argc, char **argv)
 	snprintf(remotedbpath, __PATH, "%s/%s", sysroot, remotedbdir);
 	snprintf(pkgtarballspath, __PATH, "%s/%s", sysroot, pkgtarballs); 
 	snprintf(stgtarballspath, __PATH, "%s/%s", sysroot, stgtarballs); 
-	snprintf(stgdbpath, __PATH, "%s/%s", sysroot, stgdbdir); 
+	snprintf(stgdbpath, __PATH, "%s/%s", sysroot, stgdbdir);
 
 	if (action == 1) {
 		if (installtype[0] == '\0')

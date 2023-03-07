@@ -245,10 +245,14 @@ int mkdirRecursive(char path[], int perm) {
 	char *tok = strtok_r(path, "/", &buf);
 	char dirpath[__PATH] = "";
 	int  code = 0;
+
+	if (path[0] == '/') 
+		strcat(dirpath, "/");
 	
 	while (tok != NULL) {
 		strcat(dirpath, tok);
 		strcat(dirpath, "/");
+		printf("%s\n", dirpath);
 		if ((checkDir(dirpath, "silent")) != 0) {
 			code = mkdir(dirpath, perm);
 			if (code != 0) printf("ERROR: Failed to create directory: %s\n", dirpath);
