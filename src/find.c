@@ -15,6 +15,7 @@ void FIND(char packages[], const char *root, char repositories[]) {
 				char dataCon[size]; 
 				snprintf(dataCon, size, ""); 
 				fread(dataCon, size, 1, data); 
+				dataCon[size] = 0;
 				printf("%s/%s\n", repo, dataCon);
 				fclose(data);
 			}
