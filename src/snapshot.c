@@ -67,6 +67,8 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 	};
 	cfg_t *cfg = cfg_init(opts, 0); 
 	cfg_parse(cfg, infoPath);
+
+	printf("Building stage tarball %s\n", name);
 	
 	code = checkPath(pkgorderPath, "Package build list");
 	checkCode(code);
@@ -89,6 +91,7 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 	char *buf = NULL; 
 	char *pkg = strtok_r(buildOrder, ";\n", &buf);
 	while (pkg != NULL) {
+		if (verbose != 0) printf("[DEBUG]: Building %s\n", pkg);
 		snprintf(fetchCmd, __CMD, "hanhbuild -F %s", pkg);
 		snprintf(buildCmd, __CMD, "buildroot=\"%s\" %s hanhbuild -b %s %s", installRoot, stageMode, arg, env_optarg);
 		snprintf(newTar,   __CMD, "%s/%s", dirpkgs, tarname);
@@ -114,6 +117,7 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 	}
 
 	chdir(cwd);
+	printf("Finishing stage tarball\n");
 	if (strcmp(mode, "stage") == 0) {
 		if (noinstall != 0) {
 			code = cpInfo(infoPath, dirPkgs);
@@ -136,7 +140,7 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 			checkCode(code);	
 		}
 	}
-
+	printf("Stage tarball created! (%s.tar.xz)", name);
 
 	return 0;
 }
