@@ -3,18 +3,20 @@
 // TODO: Support removing dependencies
 // Users have to manually delete package(s) old configuration file(s), as these files are for backup
 int REMOVE(char packages[], const char *root, const char *mode, const long int verbose, const int ignore) {
-	int exitFail;
+	int exitiffail;
 	if (ignore != 0) 
-		exitFail = 0; 
+		exitiffail = 0; 
 	else 
-		exitFail = 1;
+		exitiffail = 1;
 
+	char pkgs[__ARG] = "";
+	strcpy(pkgs, packages);
 	char *buf = NULL; 
-	char *pkg = strtok_r(packages, " ", &buf); 
+	char *p = strtok_r(pkgs, " ", &buf); 
 	int code  = 0;
 	int rmCode = 0;
 
-	while (pkg != NULL) {
+	while (p != NULL) {
 		char movehook[__CMD]  = ""; 
 		char prehook[__CMD]   = "";
 		char posthook[__CMD]  = ""; 
@@ -52,15 +54,15 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 
 		snprintf(prehook , __CMD , "%s/hook pre_remove", tmp); 
 		snprintf(posthook, __CMD , "%s/hook post_remove", tmp);
-		snprintf(info    , __PATH, "%s/var/lib/pachanh/system/%s/info", root, pkg);
+		snprintf(info    , __PATH, "%s/var/lib/pachanh/system/%s/info", root, p);
 		
 		if (verbose != 0) debug("Checking if package is installed");
-		int code     = checkInstalled(pkg, root); 
+		int code     = checkInstalled(p, root); 
 		int hookcode = 0; 
 		cfg_parse(cfg, info);
 
 		if (code == 0) {
-			if ((strcmp(pkg, name)) != 0) { printf("%s contains %s, removing %s\n", pkg, name, name); }
+			if ((strcmp(p, name)) != 0) { printf("%s contains %s, removing %s\n", p, name, name); }
 			printf("Removing %s\n", name);
 			
 			snprintf(sedOrder, __CMD , "sed -i 's/%s;//g' %s/var/lib/pachanh/system/pkgorder && sed -i '/^$/d' %s/var/lib/pachanh/system/pkgorder", name, root, root);
@@ -100,11 +102,11 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 					empty = 1; 
 				} 
 				else {
-					rmCode = del(fullfilepath, exitFail);
+					rmCode = del(fullfilepath, exitiffail);
 					// should we treat this as error? 
 					if (rmCode != 0) {
 						if (errno != ENOENT) {
-							if (exitFail == 0) {
+							if (exitiffail == 0) {
 								printf("WARNING: Failed to remove %s: %s\n", fullfilepath, strerror(errno));
 							}
 							else {
@@ -116,7 +118,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 					}	
 				}
 
-			file = strtok_r(NULL, "\n", &fileBuf);
+				file = strtok_r(NULL, "\n", &fileBuf);
 			}
 
 			dirinpkg[size] = 0; 
@@ -124,10 +126,10 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			char *dir    = strtok_r(dirinpkg, "\n", & dirBuf); 
 			while (dir != NULL) {
 				// should we treat this as error?
-				rmCode = del(dir, exitFail);
+				rmCode = del(dir, exitiffail);
 				if (rmCode != 0) {
 					if (errno != ENOENT && errno != ENOTEMPTY) {
-						if (exitFail == 0) {
+						if (exitiffail == 0) {
 							printf("WARNING: Failed to remove %s: %s\n", dir, strerror(errno));
 						}
 						else {
@@ -135,8 +137,8 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 							exit(errno); 
 						}	
 					}
-					dir = strtok_r(NULL, "\n", &dirBuf);
 				}	
+				dir = strtok_r(NULL, "\n", &dirBuf);
 			}
 
 			if (verbose != 0) debug("Removing package contain");
@@ -191,14 +193,14 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 			clearTmp(tmp); 
 			}
 		else {
-			if (exitFail != 0) {
-				printf("ERROR: %s not installed\n", pkg);
-				exit(exitFail); 
+			if (exitiffail != 0) {
+				printf("ERROR: %s not installed\n", p);
+				exit(exitiffail); 
 			}
 		}
 	REMOVE(dependants, root, "dependants", verbose, 1); 	
 
-	pkg = strtok_r(NULL, " ", &buf);
+	p = strtok_r(NULL, " ", &buf);
 	}
 	printf("\n");
 	return code; 

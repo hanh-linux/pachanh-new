@@ -251,6 +251,7 @@ int main(int argc, char **argv)
 	mkdirRecursive(pkgtarballspath, 0755);
 	mkdirRecursive(stgtarballspath, 0755); 
 	mkdirRecursive(stgdbpath, 0755);
+	puts(packages);
 
 	switch(action) {
 		
@@ -266,7 +267,7 @@ int main(int argc, char **argv)
 
 		
 		case 2: 
-		exitcode = REMOVE(packages, sysroot, "package", verbose, 1);
+		exitcode = REMOVE(packages, sysroot, "package", verbose, ignore);
 		checkCode(exitcode);
 		break;
 		
