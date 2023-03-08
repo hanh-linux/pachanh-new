@@ -68,7 +68,10 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 	cfg_t *cfg = cfg_init(opts, 0); 
 	cfg_parse(cfg, infoPath);
 
-	printf("Building stage tarball %s\n", name);
+	if ((strcmp(mode, "system")) == 0) 
+		printf("Building system snapshot"); 
+	else 
+		printf("Building stage tarball %s\n", name);
 	
 	code = checkPath(pkgorderPath, "Package build list");
 	checkCode(code);
@@ -139,8 +142,11 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 			code = createTar(installRoot, name);
 			checkCode(code);	
 		}
+	printf("Stage tarball created! (%s.tar.xz)\n", name);
+	} 
+	else if ((strcmp(mode, "system")) == 0) {
+		printf("Snapshot installed to the system\n");
 	}
-	printf("Stage tarball created! (%s.tar.xz)", name);
-
+	
 	return 0;
 }

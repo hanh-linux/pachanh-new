@@ -1,0 +1,63 @@
+# Based on glaucuslinux/cerata/musl/toolchain 
+
+name=musl
+ver=1.2.3
+desc="The musl libc"
+home=https://www.musl.libc.org/
+depends=""
+mkdeps="gmake"
+license="MIT"
+sources="https://musl.libc.org/releases/$name-$ver.tar.gz"
+attach="cdefs.h error.h ldconfig ld-musl.path queue.h tree.h"
+files="$name-$ver.tar.gz $attach"
+
+unpack() {
+cd $workdir
+tar -xf $hanhdir/$name-$ver.tar.gz
+}
+
+compile() {
+cd $workdir/$name-$ver
+echo ARCH=$CARCH > config.mak
+echo CFLAGS=$CFLAGS >> config.mak
+echo LDFLAGS=$LDFLAGS >> config.mak
+
+./configure --prefix=/usr --enable-wrapper=no
+gmake 
+}
+
+mkpkg() {
+cd $workdir/$name-$ver
+gmake DESTDIR=$pkgdir install
+
+install -Dm644 $hanhdir/error.h $pkgdir/usr/include/error.h 
+install -dm755 $pkgdir/usr/bin/
+
+for h in queue tree cdefs; do 
+	install -Dm644 $hanhdir/$h.h $pkgdir/usr/include/sys/$h.h 
+done
+
+cd $hanhdir/ 
+for x in genent gencat; do 
+	eval $CC $CFLAGS $CPPFLAGS $LDFLAGS -I$pkgdir/usr/include/ -o $pkgdir/usr/bin/$x $x.c || exit 1
+done 
+
+cd $pkgdir
+install -Dm755 $hanhdir/ldconfig $pkgdir/usr/bin
+
+install -dm755 etc/
+install -Dm644 $hanhdir/ld-musl.path $pkgdir/etc/ld-musl-$CARCH.path 
+ln -sf ld-musl-$CARCH.path $pkgdir/etc/ld.so.conf
+
+rm -rf lib/
+cd usr/lib/
+for lib in libc.so.6 libcrypt.so.1 libdl.so.2 libm.so.6 libpthread.so.0 libresolv.so.2; do
+	ln -sf libc.so $lib
+done
+
+ln -sf libc.so ld-musl-$CARCH.so.1 
+ln -sf libc.so ld-linux-$CARCH.so.2 
+
+cd ../bin
+ln -sf ../lib/ld-musl-$CARCH.so.1 ldd
+}
