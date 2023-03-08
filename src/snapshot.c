@@ -38,7 +38,7 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 
 	if ((strcmp(mode, "system")) == 0) {
 		snprintf(pkgorderPath, __PATH, "%s/var/lib/pachanh/system/pkgorder", root);
-		strcpy(arg, "-bd -s -i");
+		strcpy(arg, "-bd -s");
 	}
 	else if ((strcmp(mode, "stage")) == 0){
 		snprintf(pkgorderPath, __PATH, "%s/pkgorder", builddir);
@@ -96,23 +96,27 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 	while (pkg != NULL) {
 		if (verbose != 0) printf("[DEBUG]: Building %s\n", pkg);
 		snprintf(fetchCmd, __CMD, "hanhbuild -F %s", pkg);
-		snprintf(buildCmd, __CMD, "buildroot=\"%s\" %s hanhbuild -b %s %s", installRoot, stageMode, arg, env_optarg);
+		snprintf(buildCmd, __CMD, "snapshot=y buildroot=\"%s\" %s hanhbuild -b %s %s", installRoot, stageMode, arg, env_optarg);
 		snprintf(newTar,   __CMD, "%s/%s", dirpkgs, tarname);
 
 		code = system(fetchCmd); 
 		checkCode(code); 
 		chdir(pkg);
 		code = system(buildCmd);
-		checkCode(code); 
-		tarname = getName();
-		code = LOCALINSTALL(tarname, env_optarg, installRoot, nodepends, 1, ignore, verbose);
 		checkCode(code);
-		snprintf(mvpkg, __CMD, "mv %s %s/%s", tarname, dirpkgs, tarname);
-		puts(mvpkg);
+		 
 
-		if (noinstall != 0) {
-			code = system(mvpkg);
+		if ((checkPath(".up-to-date", "silent")) != 0) {
+			tarname = getName();
+			code = LOCALINSTALL(tarname, env_optarg, installRoot, nodepends, 1, ignore, verbose);
 			checkCode(code);
+		
+			snprintf(mvpkg, __CMD, "mv %s %s/%s", tarname, dirpkgs, tarname);
+	
+			if (noinstall != 0) {
+				code = system(mvpkg);
+				checkCode(code);
+			}
 		}
 		chdir(builddir);
 

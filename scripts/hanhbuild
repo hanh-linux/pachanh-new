@@ -153,12 +153,13 @@ done
 
 compare_sysver() {
 unset same version
-echo $sysroot/$system/$name/info
+rm -rf .up-to-date
 if test -f $sysroot/$system/$name/info; then
-	version=$(grep version $sysroot/$system/$name/$info | cut -d "=" -f 2 | sed 's/"//g')	
+	version=$(grep version $sysroot/$system/$name/info | cut -d "=" -f 2 | sed 's/"//g')	
 
 	if test "$ver" == "$version"; then 
 		same=y
+		test -n "$snapshot" && touch .up-to-date
 	fi
 fi
 }
@@ -355,7 +356,7 @@ if test -f "$hanhdir/$tarball" ; then
 	if test -z "$force"; then 
 		# This won't be listed as error 
 		echo "WARNING: Package built."
-		test -z $install && exit 0
+		test -z $install && exit 2
 	else 
 		install_later=$install
 		unset install
@@ -472,6 +473,11 @@ fi
 
 if test -z "$buildfile"; then
 	buildfile="$hanhdir/buildhanh"
+else 
+	cd $(dirname $buildfile)
+	hanhdir="$(pwd)"
+	workdir="$hanhdir/work"
+	pkgdir="$hanhdir/pkg"
 fi
 
 if test -n "$compile_flags"; then
