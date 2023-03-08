@@ -55,7 +55,7 @@ int REMOVE(char packages[], const char *root, const char *mode, const long int v
 		snprintf(info    , __PATH, "%s/var/lib/pachanh/system/%s/info", root, pkg);
 		
 		if (verbose != 0) debug("Checking if package is installed");
-		int code     = checkInstalled(root, pkg); 
+		int code     = checkInstalled(pkg, root); 
 		int hookcode = 0; 
 		cfg_parse(cfg, info);
 

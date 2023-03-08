@@ -30,8 +30,8 @@ int checkEmpty(const char *obj, const char *msg);
 int checkPath(const char *obj, const char *msg);
 int checkFile(const char *obj, const char *msg);
 int checkDir(const char *obj, const char *msg); 
-int checkDeps(const char *root, char depends[]);
-int checkInstalled(const char *root, const char *pkg);
+int checkDeps(char depends[], const char *env_optarg, const char *root);
+int checkInstalled(const char *pkg, const char *root);
 int keepOldUntar(const char *untarPath, const char *file); 
 int untar(const char *untarPath, const char *file); 
 int createTar(const char *dir, const char *name);
@@ -43,7 +43,7 @@ int del(const char *path, const int exitIfFail);
 char* getName();
 int mkdirRecursive(char path[], int perm);
 
-int LOCALINSTALL(char packages[], const char *root, const int nodepends, const int snapshot, const int ignore, const long int verbose);
+int LOCALINSTALL(char packages[], const char *env_optarg, const char *root, const int nodepends, const int snapshot, const int ignore, const long int verbose);
 
 void help(); 
 int INSTALL(char packages[], const char *opts, const char *mode, const char *insroot, const char *root, const char *mirror, const char *download, char allrepo[], const int nodepends, const int snapshot, const int ignore, const long int verbose);

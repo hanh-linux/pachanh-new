@@ -88,26 +88,46 @@ int checkDir(const char *obj, const char *msg) {
 	return code; 
 }
 
-int checkDeps(const char *root, char depends[]) {
+int checkDeps(char depends[], const char *env_optarg, const char *root) {
 	char *depbuf = NULL;
 	char *dep = strtok_r(depends, " ", &depbuf);
+	char fetchCmd[__PATH] = "";
+	char buildCmd[__PATH] = "";
+	char cwd[__PATH] = ""; 
+	getcwd(cwd, __PATH);
+
 	int code = 0;
 	while (dep != NULL) {
 		// Just check if the data folder is there
+		chdir(cwd);
 		char deppath[__PATH] = "";
 		snprintf(deppath, __PATH, "%s/var/lib/pachanh/system/%s", root, dep);
-		code = checkDir(deppath, dep);
+		code = checkDir(deppath, "silent");
+
 		if (code != 0) {
-			printf("ERROR: %s not installed\n", dep);
-			break;
-		}	
+			snprintf(fetchCmd, __PATH, "hanhbuild -F %s", dep); 
+			snprintf(buildCmd, __PATH, "hanhbuild -b -bd %s", env_optarg);
+
+			code = system(fetchCmd); 
+			if (code != 0) {
+				printf("%s not installed on the system and cannot be fetched\n", dep);
+				break;
+			}
+			chdir(dep);
+			code = system(buildCmd);
+			if (code != 0) {
+				printf("%s not installed on the system and cannot be built\n", dep);
+				break;
+			}
+			chdir(cwd);
+		}
 
 		dep = strtok_r(NULL, " ", &depbuf);
 	}
 	return code;
 }
 
-int checkInstalled(const char *root, const char *pkg) {
+int checkInstalled(const char *pkg, const char *root) {
 	int code = 0;
 	// Just check if the data folder is there
 	char pkgpath[__PATH] = "";
@@ -240,8 +260,10 @@ char* getName() {
 }
 
 int mkdirRecursive(char path[], int perm) {
+	char Path[__PATH] = ""; 
+	strcpy(Path, path);
 	char *buf = NULL;
-	char *tok = strtok_r(path, "/", &buf);
+	char *tok = strtok_r(Path, "/", &buf);
 	char dirpath[__PATH] = "";
 	int  code = 0;
 

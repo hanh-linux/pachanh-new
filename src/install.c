@@ -54,7 +54,7 @@ int checkConflicts(const char *root, const char *pkgname, char conflicts[], cons
 		char conflpath[__PATH] = ""; 
 		char container[__PATH] = ""; 
 		char Container[__PATH] = ""; 
-		code = checkInstalled(root, confl); 
+		code = checkInstalled(confl, root); 
 		if (code == 0) {
 			snprintf(conflpath, __PATH, "%s/var/lib/pachanh/system/%s", root, confl);
 			code = readlink(conflpath, container, __PATH); 
@@ -146,7 +146,7 @@ void removeOld(const char *root, const char *tmp) {
 	fclose(filelist); 
 }
 
-int LOCALINSTALL(char packages[], const char *root, const int nodepends, const int snapshot, const int ignore, const long int verbose) {
+int LOCALINSTALL(char packages[], const char *env_optarg, const char *root, const int nodepends, const int snapshot, const int ignore, const long int verbose) {
 	char *pkgBuf = NULL; 
 	char *pkg  = strtok_r(packages, " ", &pkgBuf); 
 	int  code    = 0; 
@@ -208,12 +208,12 @@ int LOCALINSTALL(char packages[], const char *root, const int nodepends, const i
 			};
 		cfg_t *cfg       = cfg_init(opts, 0);
 		cfg_parse(cfg, header);
-		int installCode = checkInstalled(root, name);
+		int installCode = checkInstalled(name, root);
 		
 		// Use package name instead of tarball name
 		if (nodepends == 0) {
 			if (verbose != 0) debug("Checking depends");	
-			code = checkDeps(root, depends); 
+			code = checkDeps(depends, env_optarg, root); 
 			checkCode(code);
 			}
 		if (verbose != 0) debug("Checking conflicting packages");
@@ -300,7 +300,7 @@ int PACKAGEINSTALL(char packages[], const char *opts, const char *root, const ch
 		// If it is a package tarball, install it into sysroot
 		if (file == 0) {
 			if (verbose != 0) debug("Installing local package");
-			code = LOCALINSTALL(pkg, root, nodepends, snapshot, ignore, verbose);
+			code = LOCALINSTALL(pkg, opts, root, nodepends, snapshot, ignore, verbose);
 			checkCode(code);
 		}
 		else {
@@ -352,7 +352,7 @@ int PACKAGEINSTALL(char packages[], const char *opts, const char *root, const ch
 					// Otherwise, fetch it.
 					if (found == 0) {
 						printf("WARNING: Package downloaded earlier. Using it\n");
-						code = LOCALINSTALL(pathtopkg, root, nodepends, snapshot, ignore, verbose); 
+						code = LOCALINSTALL(pathtopkg, opts, root, nodepends, snapshot, ignore, verbose); 
 						checkCode(code);
 						success = 0;
 					}
@@ -370,7 +370,7 @@ int PACKAGEINSTALL(char packages[], const char *opts, const char *root, const ch
 							success = system(fetchCmd);
 							if (success == 0) {
 								if (verbose != 0) debug("Installing fetched package");
-								code = LOCALINSTALL(pathtopkg, root, nodepends, snapshot, ignore, verbose);
+								code = LOCALINSTALL(pathtopkg, opts, root, nodepends, snapshot, ignore, verbose);
 								checkCode(code);
 								break;
 							}
@@ -407,7 +407,9 @@ int PACKAGEINSTALL(char packages[], const char *opts, const char *root, const ch
 						printf("Building package\n");
 						code = system(buildCmd);
 						checkCode(code);
-						name = getName(); 
+						name = getName();
+						code = LOCALINSTALL(name, opts, root, nodepends, snapshot, ignore, verbose);
+						checkCode(code); 
 						chdir(cwd);
 					}
 				}
@@ -420,7 +422,7 @@ int PACKAGEINSTALL(char packages[], const char *opts, const char *root, const ch
 	return code;
 }
 
-int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot, const long int verbose) {
+int LOCALSTAGEINSTALL(char tarballs[], const char *env_optarg, const char *root, const char *installRoot, const long int verbose) {
 	char *stageBuf           = NULL;
 	char *stageFile          = strtok_r (tarballs, " ", &stageBuf);
 	char stageInfo[__PATH]   = "";
@@ -472,7 +474,7 @@ int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot
 
 		// Trigger the stage script if it is presented
 		snprintf(scriptPath, __PATH, "%s/script", installDir); 
-		snprintf(runScript, __PATH, "root=\"%s\" %s", installRoot, scriptPath);
+		snprintf(runScript, __PATH, "root=\"%s\" optarg=\"%s\"sh %s", installRoot, env_optarg, scriptPath);
 		if ((checkFile(scriptPath, "silent")) == 0) {
 			if (verbose != 0) debug("Triggering script");
 			code = system(runScript);
@@ -488,7 +490,7 @@ int LOCALSTAGEINSTALL(char tarballs[], const char *root, const char *installRoot
 	return code;
 }
 
-int STAGEINSTALL(char tarballs[], const char *installRoot, const char *root, const char *mirror, const char *download, const long int verbose) {
+int STAGEINSTALL(char tarballs[], const char *env_optarg, const char *installRoot, const char *root, const char *mirror, const char *download, const long int verbose) {
 	char *stageBuf  = NULL; 
 	char *stageFile = strtok_r(tarballs, " ", &stageBuf);
 	int  code       = 0;
@@ -508,14 +510,14 @@ int STAGEINSTALL(char tarballs[], const char *installRoot, const char *root, con
 		success = 1;
 		int found = checkFile(stageFile, "silent"); 
 		if (found == 0) {
-			code = LOCALSTAGEINSTALL(stageFile, root, installRoot, verbose);	
+			code = LOCALSTAGEINSTALL(stageFile, env_optarg, root, installRoot, verbose);	
 		}
 		else {
 			char pathtostage[__PATH] = ""; 
 			snprintf(pathtostage, __PATH, "%s/var/cache/pachanh/tarballs/stage/%s.stage", root, stageFile);
 			if ((checkFile(pathtostage, "silent")) == 0) {
 				printf("WARNING: Found stage tarball in cache! Installing downloaded");
-				code = LOCALSTAGEINSTALL(pathtostage, root, installRoot, verbose);
+				code = LOCALSTAGEINSTALL(pathtostage, env_optarg, root, installRoot, verbose);
 				checkCode(code);
 			}
 			else {
@@ -549,7 +551,7 @@ int STAGEINSTALL(char tarballs[], const char *installRoot, const char *root, con
 					
 						success = system(fetchCmd);
 						if (success == 0) {
-							code = LOCALSTAGEINSTALL(pathtostage, root, installRoot, verbose);
+							code = LOCALSTAGEINSTALL(pathtostage, env_optarg, root, installRoot, verbose);
 							checkCode(code);
 							break;
 							}
@@ -572,7 +574,7 @@ int INSTALL(char packages[], const char *opts, const char *mode, const char *ins
 		code = PACKAGEINSTALL(packages, opts, root, mirror, download, allrepo, nodepends, snapshot, ignore, verbose);
 	}
 	else if ((strcmp(mode, "stage")) == 0) {
-		code = STAGEINSTALL(packages, insroot, root, mirror, download, verbose); 
+		code = STAGEINSTALL(packages, opts, insroot, root, mirror, download, verbose); 
 	}
 	return code;
 }

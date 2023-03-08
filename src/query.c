@@ -21,7 +21,7 @@ int QUERY(char packages[], const char *root, const char *filetype) {
 	char *pkg  = strtok_r(packages, " ", &pkgBuf);
 	int code = 0;
 	while (pkg != NULL) {
-		int installCode = checkInstalled(root,pkg); 
+		int installCode = checkInstalled(pkg, root); 
 		if (installCode != 0) {
 			printf("ERROR: %s not installed\n", pkg);
 			exit(1); 
