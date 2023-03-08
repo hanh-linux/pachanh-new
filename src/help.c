@@ -1,7 +1,6 @@
 #include "hanh.h"
 
 void help() {
-	printf("hanh - Hanh Linux package manager\n");
 	printf("Usage: hanh [Action] [Options]\n");
 	printf("Action\n"); 
 	printf("-i [--install     ]                       Install packages <file>\n");

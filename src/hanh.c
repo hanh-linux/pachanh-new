@@ -250,8 +250,7 @@ int main(int argc, char **argv)
 	mkdirRecursive(remotedbpath, 0755); 
 	mkdirRecursive(pkgtarballspath, 0755);
 	mkdirRecursive(stgtarballspath, 0755); 
-	mkdirRecursive(stgdbpath, 0755);
-	puts(packages);
+	mkdirRecursive(stgdbpath, 0755);	
 
 	switch(action) {
 		
