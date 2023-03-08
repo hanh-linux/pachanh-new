@@ -181,8 +181,7 @@ int updatePkglist(const char *root, const char *pkg) {
 	FILE *orderfile = fopen(orderpath , "a+");  
 	code = fprintf(orderfile, "%s;\n", pkg);
 	fclose(orderfile);
-	if (code > 0) { code = 0; } else { code = 1; } 
-	fclose(orderfile); 
+	if (code > 0) { code = 0; } else { code = 1; }  
 	return code;
 }
 
