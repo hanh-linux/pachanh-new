@@ -7,7 +7,7 @@
 
 int cpInfo(char *file, const char *dir) {
 	char cmd[__PATH] = ""; 
-	snprintf(cmd, __PATH, "cp -r %s %s/%s", file, dir, basename(file));
+	snprintf(cmd, __PATH, "install -Dm755 %s %s/%s", file, dir, basename(file));
 	int code = system(cmd);
 	return code;
 }
