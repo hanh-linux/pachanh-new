@@ -3,6 +3,7 @@ version=2.0
 remote="/var/lib/pachanh/remote"
 system="/var/lib/pachanh/system"
 hanhdir="$(pwd)"
+sourcedir="$hanhdir/sources"
 workdir="$hanhdir/work"
 pkgdir="$hanhdir/pkg"
 
@@ -66,7 +67,7 @@ eval "$downloader $1 $2" || die "Failed to fetch source"
 }
 
 fetch_sources() {
-for src in $*; do 
+for src in $attach $*; do 
 	srcargs="$(echo $src | sed "s/::/ /g")"
 	parse_srcargs $srcargs
 	case "$localname" in
@@ -75,7 +76,7 @@ for src in $*; do
 			remoteurl="$localname";
 			localname="$(basename $localname)";;
 	esac
-	if ! test -f "$localname" && ! test -d "$localname"; then
+	if ! test -f "$sourcedir/$localname" && ! test -d "$sourcedir/$localname"; then
 		if test -z $remotetype; then 
 			die "$localname not found!"
 		else
@@ -84,14 +85,14 @@ for src in $*; do
 			fi
 			case $remotetype in
 				file ) 
-					fetch $hanhdir/$localname $remoteurl || die "Failed to fetch source (file: $localname)";;
+					fetch $sourcedir/$localname $remoteurl || die "Failed to fetch source (file: $localname)";;
 				git  ) 
-					git clone $remoteurl $workdir/$localname || die "Failed to fetch source (git: $localname)";
+					git clone $remoteurl $sourcedir/$localname || die "Failed to fetch source (git: $localname)";
 					rm -rf $hanhdir/$localname/.git;;
 				commit ) 
-					git clone $remoteurl $workdir/$localname || die "Failed to fetch source (git commit: $localname)";
-					cd $workdir/$localname
-					git checkout $gitcommit;
+					git clone $remoteurl $source/$localname || die "Failed to fetch source (git commit: $localname)";
+					cd $sourcedir/$localname;
+					git checkout $gitcommit || die "Failed to checkout git commit";
 					rm -rf .git/;
 					cd $hanhdir;;
 			esac
@@ -101,10 +102,13 @@ for src in $*; do
 	# Support XZ, GZIP, BZIP2 and ZSTD format
 	case $localname in
 		*.tar.gz|*.tgz|*.tar.bz2|*.tbz2|*.tar.xz|*.txz) 
-			tar -C $workdir -xf $hanhdir/$localname;;
+			tar -C $workdir -xf $sourcedir/$localname;;
 		*.zst ) 
-			zstd --output-dir-flat $workdir -d $hanhdir/$localname
+			zstd --output-dir-flat $workdir -d $sourcedir/$localname;;
 	esac
+	if test -d "$sourcedir/$localname"; then
+		cp -r $sourcedir/$localname $workdir/$localname
+	fi
 done
 }
 
@@ -114,7 +118,6 @@ if test -z "$repo"; then
 	die "Empty repo"
 fi
 
-echo $cwd
 for x in $*; do
 	unset fetched found
 	if ! test -f $cwd/$x/buildhanh; then 
@@ -129,8 +132,11 @@ for x in $*; do
 							mv buildhanh $cwd/$x
 							cd $cwd/$x
 							. "$(pwd)/buildhanh"
+							if test -n "$attach"; then
+								mkdir -p sources/
+							fi
 							for t in $attach; do 
-								fetch $t $z/$x/$t
+								fetch sources/$t $z/$x/$t
 							done
 							cd $cwd
 							break
@@ -175,11 +181,17 @@ if test -n "$*"; then
 			if test -z "$builddeps"; then
 				die "Dependency $dep not found"
 			else
-				cd "$hanhdir"/deps
-				hanhbuild -F "$dep" || die "Dependencies not found in remote"
-				cd "$dep"
-				hanhbuild -b -bd -i || die "Failed to build dependencies"
-				cd "$hanhdir"
+				if test -f ../$dep/buildhanh; then
+					cd ../$dep
+					hanhbuild -b -bd -i || die "Failed to build dependencies"
+					cd $hanhdir
+				else
+					cd "$hanhdir"/deps
+					hanhbuild -F "$dep" || die "Dependencies not found in remote"
+					cd "$dep"
+					hanhbuild -b -bd -i || die "Failed to build dependencies"
+					cd "$hanhdir"
+				fi
 			fi
 		fi
 	done
@@ -193,16 +205,21 @@ if test -n "$*"; then
 			if test -z "$builddeps"; then
 				die "Dependency $dep not found"
 			else
-				cd "$hanhdir"/deps
-				hanhbuild -F "$dep" || die "Dependencies not found in remote"
-				cd "$dep"
-				hanhbuild -b -bd -i || die "Failed to build dependencies"
-				cd "$hanhdir"
+				if test -f ../$dep/buildhanh; then
+					cd ../$dep
+					hanhbuild -b -bd -i || die "Failed to build dependencies"
+					cd $hanhdir
+				else
+					cd "$hanhdir"/deps
+					hanhbuild -F "$dep" || die "Dependencies not found in remote"
+					cd "$dep"
+					hanhbuild -b -bd -i || die "Failed to build dependencies"
+					cd "$hanhdir"
+				fi
 			fi
 		fi
 	done
 fi
-
 }
 
 get_tarball() {
@@ -320,6 +337,20 @@ cat "$hanhdir/buildhanh" >> $hanhdir/.temp-buildhanh
 mv $hanhdir/.temp-buildhanh $hanhdir/buildhanh
 }
 
+use_source() {
+unset old
+if test -d "$1"; then 
+	if test "$2" == "work"; then 
+		workdir="$1"
+		old=y
+	elif test -z "$2"; then 
+		sourcedir="$1"
+	elif test "$2" == "source"; then 
+		sourcedir="$1"
+	fi
+fi
+}
+
 build() {
 if test -n "$stagemode"; then
 	buildopts="stage $buildopts"
@@ -356,7 +387,7 @@ if test -f "$hanhdir/$tarball" ; then
 	if test -z "$force"; then 
 		# This won't be listed as error 
 		echo "WARNING: Package built."
-		test -z $install && exit 2
+		test -z $install && exit 0
 	else 
 		install_later=$install
 		unset install
@@ -476,6 +507,7 @@ if test -z "$buildfile"; then
 else 
 	cd $(dirname $buildfile)
 	hanhdir="$(pwd)"
+	sourcedir="$hanhdir/sources"
 	workdir="$hanhdir/work"
 	pkgdir="$hanhdir/pkg"
 fi

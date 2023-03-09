@@ -12,7 +12,8 @@ int QUERY(char packages[], const char *root, const char *filetype) {
 		char pkgorderCon[size];
 		snprintf(pkgorderCon, size, "");
 		fread(pkgorderCon, size, 1, pkgorder); 
-		
+		pkgorderCon[size] = 0;
+
 		printf("%s\n", pkgorderCon); 
 		fclose(pkgorder); 
 		return 0; 

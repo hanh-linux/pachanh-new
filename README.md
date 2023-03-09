@@ -1,3 +1,4 @@
+> This project is still under heavily development, syntax or functions will be updated unexpectedly.
 ## pachanh-new
 Next generation of Hanh Linux package manager. 
 
