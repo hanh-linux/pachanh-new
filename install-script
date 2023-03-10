@@ -50,11 +50,11 @@ done
 
 COMPILE() {
 run cp -r src/* out/ 
-run cp -r etc/*.conf out/ 
+run cp -r etc/*.conf out/
 run cp -r scripts/* out/
 
 run sed "s|SYSROOT|$SYSROOT|g" -i out/hanh.conf out/hanhbuild.conf
-run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c out/hanhbuild.conf out/genpkg
+run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c out/hanhbuild.conf out/genpkg out/functions
 run sed "s|prefix|$PREFIX|g" -i out/hanh.c
 cd out/
 . $(pwd)/compile 
@@ -74,7 +74,8 @@ run install -Dm755 out/genpkg $DESTDIR/$SYSROOT/$PREFIX/bin/genpkg
 
 run install -Dm644 src/hanh.h $DESTDIR/$SYSROOT/$PREFIX/include/hanh.h
 
-run install -Dm644 scripts/functions $DESTDIR/$CONFDIR/hanh.d/functions 
+run install -Dm644 out/functions $DESTDIR/$CONFDIR/hanh.d/functions 
+run install -Dm644 scripts/script-functions $DESTDIR/$CONFDIR/hanh.d/script-functions
 
 if test -z "$keepcfg"; then
 	run install -Dm644 out/hanh.conf $DESTDIR/$CONFDIR/hanh.conf

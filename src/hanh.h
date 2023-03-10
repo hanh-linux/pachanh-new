@@ -9,6 +9,7 @@
 #include <getopt.h>
 #include <time.h>
 
+#define checkPath checkFile
 #define __PREFIX "prefix"
 #define __PATH 2048
 #define __VER  "2.1"
@@ -27,7 +28,6 @@ void checkCode(const int code);
 void debug(const char *msg);
 
 int checkEmpty(const char *obj, const char *msg); 
-int checkPath(const char *obj, const char *msg);
 int checkFile(const char *obj, const char *msg);
 int checkDir(const char *obj, const char *msg); 
 int checkDeps(char depends[], const char *env_optarg, const char *root);

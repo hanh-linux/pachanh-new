@@ -29,28 +29,10 @@ int checkEmpty(const char *obj, const char *msg) {
 	else {
 		return 0; 
 	}
-}
-	
-int checkPath(const char *obj, const char *msg) {
-	struct stat buf;
-	int code = stat(obj, &buf);
-	if (code != 0) {
-		if ((strcmp(msg, "silent")) != 0) {
-			printf("%s not found\n", msg);  
-			}
-		}
-	return code; 
-	}
+}	
 
 int checkFile(const char *obj, const char *msg) {
-	struct stat buf; 
-	stat(obj, &buf);
-	int code = S_ISREG(buf.st_mode);
-	if (code == 0)
-		code = 1; 
-	else 
-		code = 0; 
-
+	int code = access(obj, F_OK);
 	if (code != 0) {
 		if ((strcmp(msg, "silent")) != 0) {
 			printf("%s not found or not a file\n", msg);

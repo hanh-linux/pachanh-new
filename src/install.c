@@ -347,6 +347,7 @@ int PACKAGEINSTALL(char packages[], const char *opts, const char *root, const ch
 
 					char pathtopkg[__PATH] = "";
 					snprintf(pathtopkg, __CMD, "%s/var/cache/pachanh/tarballs/packages/%s", root, pkgTar);
+					puts(pkgTar);
 					found = checkFile(pathtopkg, "silent"); 
 					// If the package downloaded earlier, we will install it
 					// Otherwise, fetch it.

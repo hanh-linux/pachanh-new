@@ -1,0 +1,16 @@
+#!/bin/sh
+
+clean() {
+	rm -rf $root/pacakges || echo "WARNING: Cannot clean up packages dir"
+}
+
+installpkg() {
+	if test -z "$order"; then 
+		order="$(ls $root/packages | grep hanhpkg.tar.xz)"
+	fi
+	for pkg in $order; do 
+		hanh -i $optargs $root/packages/$pkg* || die "Cannot install $pkg" 
+	done
+}
+
+
