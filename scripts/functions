@@ -140,7 +140,7 @@ for x in $*; do
 								mkdir -p sources/
 							fi
 							for t in $attach; do 
-								fetch sources/$t $z/$x/$t
+								fetch sources/$t $z/$x/sources/$t
 							done
 							cd $cwd
 							break
