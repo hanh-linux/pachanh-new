@@ -167,7 +167,7 @@ rm -rf .up-to-date
 if test -f $sysroot/$system/$name/info; then
 	version=$(grep version $sysroot/$system/$name/info | cut -d "=" -f 2 | sed 's/"//g')	
 
-	if test "$ver" == "$version"; then 
+	if test "$verwithrel" == "$version"; then 
 		same=y
 		test -n "$snapshot" && touch .up-to-date
 	fi
@@ -342,15 +342,17 @@ mv $hanhdir/.temp-buildhanh $hanhdir/buildhanh
 }
 
 use_source() {
-unset old
 if test -d "$1"/sources; then 
-	if test "$2" == "work"; then 
-		workdir="$1"
-		old=y
-	elif test -z "$2"; then 
-		sourcedir="$1"
-	elif test "$2" == "source"; then 
-		sourcedir="$1"
+	sourcedir="$1/sources"
+fi
+}
+
+use_work() {
+unset built
+if test -d "$1"/work; then 
+	workdir="$1/work"
+	if test -f "$workdir/.built"; then
+		built=1
 	fi
 fi
 }
@@ -371,9 +373,13 @@ done
 test -n "$USE_FLAGS" && export $USE_FLAGS
 . "$buildfile" || die "Cannot get information from $buildfile"
 
+if test -z "$rel"; then
+	rel=1
+fi
 if test -n "$Task"; then
 	task="$Task"
 fi
+verwithrel=$ver-$rel
 
 cd $hanhdir
 
@@ -385,7 +391,7 @@ if test -n "$syscompare"; then
 	fi
 fi
 
-tarball=$name-$ver.hanhpkg.tar.xz
+tarball=$name-$verwithrel.hanhpkg.tar.xz
 
 if test -f "$hanhdir/$tarball" ; then 
 	if test -z "$force"; then 
@@ -442,7 +448,8 @@ for func in $task; do
 			$_t || die "Failed to run mkpkg_task" 
 		done
 	else
-		eval $func || die Failed to run function $compile
+		eval $func || die Failed to run function $func
+		test "$func" == compile && touch $workdir/.built
 	fi
 done
 
@@ -473,6 +480,7 @@ mkpkg
 }
 
 geninfo() {
+verwithrel="$ver-$rel"
 infodir=$pkgdir/var/lib/pachanh/system/"$name"
 info="$infodir/info"
 filelist="$infodir/filelist"
@@ -483,7 +491,7 @@ mkdir -p "$infodir"
 touch "$infodir/filelist"
 
 echo "name=\"$name\"" >> "$info"
-echo "version=\"$ver\"" >> "$info"
+echo "version=\"$verwithrel\"" >> "$info"
 echo "desc=\"$desc\"" >> "$info"
 echo "home=\"$home\"" >> "$info"
 echo "license=\"$license\"" >> $info
@@ -494,7 +502,7 @@ echo "dependants=\"\"" >> "$info"
 find * | awk '{ print length(), $0 | "sort -n -r" }' | cut -d " " -f2 | tee "$filelist" > /dev/null 2>&1
 
 echo "name=\"$name\"" >> "$header"
-echo "version=\"$ver\"" >> "$header"
+echo "version=\"$verwithrel\"" >> "$header"
 echo "desc=\"$desc\"" >> "$header"
 echo "depends=\"$depends\"" >> "$header"
 echo "contain=\"$contain\"" >> "$header"
