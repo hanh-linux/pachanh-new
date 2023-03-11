@@ -145,7 +145,7 @@ int createTar(const char *dir, const char *name) {
 	char cmd[__CMD] = "";
 	int code = 0;
 	getcwd(cwd, __PATH); 
-	snprintf(cmd, __CMD, "tar -cjf %s/%s.tar.xz *", cwd, name);
+	snprintf(cmd, __CMD, "tar -cJf %s/%s.tar.xz *", cwd, name);
 
 	chdir(dir);
 	code = system(cmd);
