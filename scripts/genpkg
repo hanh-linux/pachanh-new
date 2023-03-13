@@ -1,5 +1,80 @@
 #!/bin/sh
-. "CONFDIR/hanh.d/functions" || die "Cannot get functions from file"
+setopts() {
+	:
+}
+use_source() {
+	:
+}
+use_work() {
+	:
+}
+ask_pkg() {
+	:
+}
+installpkg() {
+mkpkg
+}
+
+geninfo() {
+verwithrel="$ver-$rel"
+infodir=$pkgdir/var/lib/pachanh/system/"$name"
+info="$infodir/info"
+filelist="$infodir/filelist"
+header="$pkgdir/pre-install"
+
+cd $pkgdir
+mkdir -p "$infodir"
+touch "$infodir/filelist"
+
+echo "name=\"$name\"" >> "$info"
+echo "version=\"$verwithrel\"" >> "$info"
+echo "desc=\"$desc\"" >> "$info"
+echo "home=\"$home\"" >> "$info"
+echo "license=\"$license\"" >> $info
+echo "depends=\"$depends\"" >> "$info"
+echo "contain=\"$contain\"" >> "$info"
+echo "dependants=\"\"" >> "$info"
+
+find * | awk '{ print length(), $0 | "sort -n -r" }' | cut -d " " -f2 | tee "$filelist" > /dev/null 2>&1
+
+echo "name=\"$name\"" >> "$header"
+echo "version=\"$verwithrel\"" >> "$header"
+echo "desc=\"$desc\"" >> "$header"
+echo "depends=\"$depends\"" >> "$header"
+echo "contain=\"$contain\"" >> "$header"
+echo "config=\"$config\"" >> "$header"
+echo "pkg_infodir=\"var/lib/pachanh/system/$name\"" >> "$header"
+
+for x in $contain; do
+	ln -sf "$name" "$pkgdir/$system/$x" 
+done
+
+for x in $config; do
+	mv "$pkgdir"/"$x" "$pkgdir"/"$x".newfile
+done
+
+if test -f "$hanhdir"/"$hook"; then 
+	cp -r "$hanhdir"/"$hook" $hanhdir/.temp-hook
+cat << EOF >> $hanhdir/.temp-hook
+
+die() {
+	echo "Failed to trigger hook"
+	exit 1
+}
+
+. "\$1" 
+
+type "\$2" > /dev/null 2>&1 
+if test "\$?" == 0; then 
+	\$* || die
+fi	
+EOF
+install -Dm755 "$hanhdir"/.temp-hook "$pkgdir"/hook
+install -Dm755 "$hanhdir"/.temp-hook "$infodir"/hook
+rm -rf $hanhdir/.temp-hook
+fi
+}
+
 if test -z "$GEN"; then 
 	echo "This part is from hanhbuild script"
 	echo "It doesn't do anything without hanhbuild"

@@ -77,6 +77,7 @@ int checkDeps(char depends[], const char *env_optarg, const char *root) {
 	char buildCmd[__PATH] = "";
 	char cwd[__PATH] = ""; 
 	getcwd(cwd, __PATH);
+	char *localDepsOnly = getenv("localdeps");
 
 	int code = 0;
 	while (dep != NULL) {
@@ -87,6 +88,12 @@ int checkDeps(char depends[], const char *env_optarg, const char *root) {
 		code = checkDir(deppath, "silent");
 
 		if (code != 0) {
+			if (localDepsOnly != NULL) {
+				printf("ERROR: Failed to find dependencies: %s", dep);
+				code = 1; 
+				break;
+			}
+
 			snprintf(fetchCmd, __PATH, "hanhbuild -F %s", dep); 
 			snprintf(buildCmd, __PATH, "hanhbuild -b -bd %s", env_optarg);
 

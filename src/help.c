@@ -27,5 +27,8 @@ void help() {
 	printf("-b [--buildtype   ] [system/stage]        Modify snapshot buildtype\n"); 
 	printf("-B [--builddir    ] <path>                Packages build directory\n");
 	printf("-T [--stageroot   ] <path>                Directory to install stage packages for building\n");
+	printf("Variable:\n"); 
+	printf("optarg=<arg>                              Optional arguments for build task\n");
+	printf("localdeps=<non-empty val>                 Only check dependencies without fetch them from remote\n");
 	exit(0);
 	}

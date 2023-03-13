@@ -475,7 +475,7 @@ int LOCALSTAGEINSTALL(char tarballs[], const char *env_optarg, const char *root,
 
 		// Trigger the stage script if it is presented
 		snprintf(scriptPath, __PATH, "%s/script", installDir); 
-		snprintf(runScript, __PATH, "root=\"%s\" optarg=\"%s\"sh %s", installRoot, env_optarg, scriptPath);
+		snprintf(runScript, __PATH, "root=\"%s\" optarg=\"%s\" sh %s", installRoot, env_optarg, scriptPath);
 		if ((checkFile(scriptPath, "silent")) == 0) {
 			if (verbose != 0) debug("Triggering script");
 			code = system(runScript);

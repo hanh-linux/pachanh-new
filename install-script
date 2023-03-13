@@ -54,7 +54,7 @@ run cp -r etc/*.conf out/
 run cp -r scripts/* out/
 
 run sed "s|SYSROOT|$SYSROOT|g" -i out/hanh.conf out/hanhbuild.conf
-run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c out/hanhbuild.conf out/genpkg out/functions
+run sed "s|CONFDIR|$CONFDIR|g" -i out/hanh.conf out/hanhbuild out/hanh.c out/hanhbuild.conf out/genpkg 
 run sed "s|prefix|$PREFIX|g" -i out/hanh.c
 cd out/
 . $(pwd)/compile 

@@ -96,7 +96,7 @@ int SNAPSHOT(const char *installRoot, const char *buildDir, const char *env_opta
 	while (pkg != NULL) {
 		if (verbose != 0) printf("[DEBUG]: Building %s\n", pkg);
 		snprintf(fetchCmd, __CMD, "hanhbuild -F %s", pkg);
-		snprintf(buildCmd, __CMD, "snapshot=y buildroot=\"%s\" %s hanhbuild -b %s %s", installRoot, stageMode, arg, env_optarg);
+		snprintf(buildCmd, __CMD, "hanhbuild -b %s %s snapshot=y buildroot=\"%s\" %s", arg, env_optarg, installRoot, stageMode) ;
 		snprintf(newTar,   __CMD, "%s/%s", dirpkgs, tarname);
 
 		code = system(fetchCmd); 
